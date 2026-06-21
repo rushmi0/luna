@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# ring's build.rs hardcodes "clang" for MSVC cross-compilation and ignores
+# CC_* env vars, but cargo-xwin sets CFLAGS_* with /imsvc flags that only
+# clang-cl understands. This wrapper converts /imsvc <path> -> -isystem <path>
+# so ring's C compilation succeeds without changing any Rust dependencies.
+#
+# LUNA_REAL_CLANG must be set to the absolute path of the system clang binary
+# before this directory is prepended to PATH.
+if [ -z "${LUNA_REAL_CLANG:-}" ]; then
+    echo "clang wrapper: LUNA_REAL_CLANG is not set" >&2
+    exit 1
+fi
+args=()
+while [ "$#" -gt 0 ]; do
+    if [ "$1" = "/imsvc" ]; then
+        shift
+        args+=("-isystem" "$1")
+    else
+        args+=("$1")
+    fi
+    shift
+done
+exec "$LUNA_REAL_CLANG" "${args[@]}"

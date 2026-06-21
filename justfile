@@ -13,8 +13,8 @@ native_dir  := src_dir / "nativeMain"
 jvm_dir     := src_dir / "jvmMain"
 artifact    := "luna"
 
-# Full pipeline (add ios before clean-kmp when building on macOS) : build-windows
-default: build-host build-android build-linux  clean-kmp generate-bindings copy-android copy-linux-glibc copy-linux-musl copy-freebsd copy-windows build-kmp
+# Full pipeline (add ios before clean-kmp when building on macOS)
+default: build-host build-android build-linux build-windows clean-kmp generate-bindings copy-android copy-linux-glibc copy-linux-musl copy-freebsd copy-windows build-kmp
 
 # Build and copy Android libs
 android: build-android copy-android
@@ -26,24 +26,23 @@ ios: build-ios copy-ios
 linux: build-linux copy-linux-glibc copy-linux-musl copy-freebsd
 
 # Build and copy all JVM resources (Linux + Windows; add macos on macOS)
-jvm: linux #build-windows copy-windows
+jvm: linux build-windows copy-windows
 
+
+setup:
+    cargo check
 
 # Host Linux x86_64 — used by gobley-uniffi-bindgen
-build-host:
+build-host: setup
     cargo build --lib --release
 
-build-android:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+build-android: setup
     cargo ndk -t arm64-v8a -t armeabi-v7a -t x86 -t x86_64 -P 24 build --lib --release
 
 # macOS only
-build-ios:
+build-ios: setup
     #!/usr/bin/env bash
     set -euxo pipefail
-    rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
     for TARGET in \
         aarch64-apple-ios     \
         aarch64-apple-ios-sim \
@@ -51,21 +50,9 @@ build-ios:
         cargo zigbuild --lib --release --target "$TARGET"
     done
 
-build-linux:
+build-linux: setup
     #!/usr/bin/env bash
     set -euxo pipefail
-    rustup target add \
-        x86_64-unknown-linux-gnu       \
-        aarch64-unknown-linux-gnu      \
-        armv7-unknown-linux-gnueabihf  \
-        i686-unknown-linux-gnu         \
-        riscv64gc-unknown-linux-gnu    \
-        x86_64-unknown-linux-musl      \
-        aarch64-unknown-linux-musl     \
-        armv7-unknown-linux-musleabihf \
-        i686-unknown-linux-musl        \
-        riscv64gc-unknown-linux-musl   \
-        x86_64-unknown-freebsd
     for TARGET in \
         x86_64-unknown-linux-gnu       \
         aarch64-unknown-linux-gnu      \
@@ -82,10 +69,11 @@ build-linux:
     done
 
 # XWIN_ARCH must include x86; default is only x86_64,aarch64
-build-windows:
+build-windows: setup
     #!/usr/bin/env bash
     set -euxo pipefail
-    rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc aarch64-pc-windows-msvc
+    export LUNA_REAL_CLANG="$(PATH=/usr/local/bin:/usr/bin:/bin command -v clang)"
+    export PATH="{{script_dir}}/scripts:$PATH"
     export CLANG_CL=clang-cl
     for TARGET in \
         x86_64-pc-windows-msvc  \
@@ -95,10 +83,9 @@ build-windows:
     done
 
 # macOS only
-build-macos:
+build-macos: setup
     #!/usr/bin/env bash
     set -euxo pipefail
-    rustup target add aarch64-apple-darwin x86_64-apple-darwin
     for TARGET in aarch64-apple-darwin x86_64-apple-darwin; do
         cargo zigbuild --lib --release --target "$TARGET"
     done
@@ -164,8 +151,7 @@ copy-macos:
 
 
 # Build unstripped debug lib (release profile has strip=true), generate KMP bindings, copy to src
-generate-bindings:
-    rustup target add x86_64-unknown-linux-gnu
+generate-bindings: setup
     cargo build --lib --target x86_64-unknown-linux-gnu
     gobley-uniffi-bindgen \
         --library "{{target_dir}}/x86_64-unknown-linux-gnu/debug/lib{{artifact}}.so" \
