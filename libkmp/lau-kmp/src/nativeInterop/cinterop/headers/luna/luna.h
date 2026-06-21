@@ -176,6 +176,8 @@ void uniffi_luna_fn_method_luavm_set_global(void * ptr, RustBuffer name, RustBuf
 );
 RustBuffer uniffi_luna_fn_method_luavm_version(void * ptr, UniffiRustCallStatus *_Nonnull out_status
 );
+void uniffi_luna_fn_func_init_logger(RustBuffer level, UniffiRustCallStatus *_Nonnull out_status
+);
 RustBuffer ffi_luna_rustbuffer_alloc(int64_t size, UniffiRustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_luna_rustbuffer_from_bytes(ForeignBytes bytes, UniffiRustCallStatus *_Nonnull out_status
@@ -287,6 +289,9 @@ void ffi_luna_rust_future_cancel_void(int64_t handle
 void ffi_luna_rust_future_free_void(int64_t handle
 );
 void ffi_luna_rust_future_complete_void(int64_t handle, UniffiRustCallStatus *_Nonnull out_status
+);
+int16_t uniffi_luna_checksum_func_init_logger(void
+    
 );
 int16_t uniffi_luna_checksum_method_luavm_eval(void
     

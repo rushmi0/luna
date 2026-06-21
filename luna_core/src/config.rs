@@ -19,3 +19,19 @@ impl Default for VmOptions {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_stdlib_is_all() {
+        assert!(matches!(VmOptions::default().stdlib, StdLib::All));
+    }
+
+    #[test]
+    fn stdlib_variants_are_distinct() {
+        assert!(!matches!(StdLib::Safe, StdLib::All));
+        assert!(!matches!(StdLib::None, StdLib::Safe));
+    }
+}

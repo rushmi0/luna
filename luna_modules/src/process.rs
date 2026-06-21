@@ -25,3 +25,38 @@ pub fn init(lua: &Lua) -> Result<()> {
     lua.globals().set("process", t)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mlua::{LuaOptions, StdLib};
+
+    fn lua() -> Lua {
+        Lua::new_with(StdLib::ALL_SAFE, LuaOptions::default()).unwrap()
+    }
+
+    #[test]
+    fn init_attaches_process_with_exit_pid_args() {
+        let lua = lua();
+        init(&lua).unwrap();
+        let process: mlua::Table = lua.globals().get("process").unwrap();
+        assert!(process.get::<mlua::Function>("exit").is_ok());
+        assert!(process.get::<mlua::Function>("pid").is_ok());
+        assert!(process.get::<mlua::Function>("args").is_ok());
+    }
+
+    #[test]
+    fn pid_returns_positive_integer() {
+        let lua = lua();
+        init(&lua).unwrap();
+        let pid: u32 = lua.load("return process.pid()").eval().unwrap();
+        assert!(pid > 0);
+    }
+
+    #[test]
+    fn args_returns_a_table() {
+        let lua = lua();
+        init(&lua).unwrap();
+        lua.load("assert(type(process.args()) == 'table')").exec().unwrap();
+    }
+}

@@ -982,6 +982,8 @@ internal interface UniffiForeignFutureCompleteVoid: com.sun.jna.Callback {
 
 
 
+
+
 @Synchronized
 private fun findLibraryName(componentName: String): String {
     val libOverride = System.getProperty("uniffi.component.$componentName.libraryOverride")
@@ -1012,6 +1014,8 @@ private inline fun <reified Lib : Library> loadIndirect(
 // when the library is loaded.
 internal interface IntegrityCheckingUniffiLib : Library {
     // Integrity check functions only
+    fun uniffi_luna_checksum_func_init_logger(
+    ): Short
     fun uniffi_luna_checksum_method_luavm_eval(
     ): Short
     fun uniffi_luna_checksum_method_luavm_exec(
@@ -1130,6 +1134,10 @@ internal interface UniffiLib : Library {
         `ptr`: Pointer?,
         uniffiCallStatus: UniffiRustCallStatus,
     ): RustBufferByValue
+    fun uniffi_luna_fn_func_init_logger(
+        `level`: RustBufferByValue,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Unit
     fun ffi_luna_rustbuffer_alloc(
         `size`: Long,
         uniffiCallStatus: UniffiRustCallStatus,
@@ -1357,6 +1365,9 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 
 
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
+    if (lib.uniffi_luna_checksum_func_init_logger() != 39137.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_luna_checksum_method_luavm_eval() != 59906.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1366,10 +1377,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_luna_checksum_method_luavm_get_global() != 10148.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_luna_checksum_method_luavm_run() != 3462.toShort()) {
+    if (lib.uniffi_luna_checksum_method_luavm_run() != 37754.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_luna_checksum_method_luavm_run_file() != 16863.toShort()) {
+    if (lib.uniffi_luna_checksum_method_luavm_run_file() != 22506.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_luna_checksum_method_luavm_set_global() != 5217.toShort()) {
@@ -1679,9 +1690,6 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
         })
     }
 
-    /**
-     * Evaluate `source` and return the first produced value.
-     */
     @Throws(LuaException::class)
     public actual override fun `run`(`source`: kotlin.String): LuaValue {
         return FfiConverterTypeLuaValue.lift(callWithPointer {
@@ -1695,9 +1703,6 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
         })
     }
 
-    /**
-     * Load a `.lua` file from `path` and execute it.
-     */
     @Throws(LuaException::class)
     public actual override fun `runFile`(`path`: kotlin.String) {
         callWithPointer {
@@ -1791,15 +1796,73 @@ public object FfiConverterTypeLuaConfig: FfiConverterRustBuffer<LuaConfig> {
     override fun read(buf: ByteBuffer): LuaConfig {
         return LuaConfig(
             FfiConverterTypeLuaStdLib.read(buf),
+            FfiConverterTypeLuaModules.read(buf),
         )
     }
 
     override fun allocationSize(value: LuaConfig): ULong = (
-            FfiConverterTypeLuaStdLib.allocationSize(value.`stdlib`)
+            FfiConverterTypeLuaStdLib.allocationSize(value.`stdlib`) +
+            FfiConverterTypeLuaModules.allocationSize(value.`modules`)
     )
 
     override fun write(value: LuaConfig, buf: ByteBuffer) {
         FfiConverterTypeLuaStdLib.write(value.`stdlib`, buf)
+        FfiConverterTypeLuaModules.write(value.`modules`, buf)
+    }
+}
+
+
+
+
+public object FfiConverterTypeLuaModules: FfiConverterRustBuffer<LuaModules> {
+    override fun read(buf: ByteBuffer): LuaModules {
+        return LuaModules(
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: LuaModules): ULong = (
+            FfiConverterBoolean.allocationSize(value.`console`) +
+            FfiConverterBoolean.allocationSize(value.`timer`) +
+            FfiConverterBoolean.allocationSize(value.`env`) +
+            FfiConverterBoolean.allocationSize(value.`process`) +
+            FfiConverterBoolean.allocationSize(value.`http`) +
+            FfiConverterBoolean.allocationSize(value.`fs`) +
+            FfiConverterBoolean.allocationSize(value.`server`)
+    )
+
+    override fun write(value: LuaModules, buf: ByteBuffer) {
+        FfiConverterBoolean.write(value.`console`, buf)
+        FfiConverterBoolean.write(value.`timer`, buf)
+        FfiConverterBoolean.write(value.`env`, buf)
+        FfiConverterBoolean.write(value.`process`, buf)
+        FfiConverterBoolean.write(value.`http`, buf)
+        FfiConverterBoolean.write(value.`fs`, buf)
+        FfiConverterBoolean.write(value.`server`, buf)
+    }
+}
+
+
+
+
+
+public object FfiConverterTypeLogLevel: FfiConverterRustBuffer<LogLevel> {
+    override fun read(buf: ByteBuffer): LogLevel = try {
+        LogLevel.entries[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: LogLevel): ULong = 4UL
+
+    override fun write(value: LogLevel, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 
@@ -1976,6 +2039,15 @@ public object FfiConverterTypeLuaValue : FfiConverterRustBuffer<LuaValue>{
     }
 }
 
+
+public actual fun `initLogger`(`level`: LogLevel) {
+    uniffiRustCall { uniffiRustCallStatus ->
+        UniffiLib.INSTANCE.uniffi_luna_fn_func_init_logger(
+            FfiConverterTypeLogLevel.lower(`level`),
+            uniffiRustCallStatus,
+        )
+    }
+}
 
 
 // Async support

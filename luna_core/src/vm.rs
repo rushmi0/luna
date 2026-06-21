@@ -118,3 +118,92 @@ impl Vm {
             .unwrap_or_else(|_| "unknown".to_string())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::VmOptions;
+
+    fn vm() -> Vm {
+        Vm::from_options(VmOptions::default()).unwrap()
+    }
+
+    #[test]
+    fn from_options_default_succeeds() {
+        assert!(Vm::from_options(VmOptions::default()).is_ok());
+    }
+
+    #[test]
+    fn version_is_non_empty() {
+        assert!(!vm().version().is_empty());
+    }
+
+    #[test]
+    fn run_arithmetic() {
+        assert!(matches!(vm().run("return 6 * 7").unwrap(), Value::Integer(42)));
+    }
+
+    #[test]
+    fn exec_sets_global() {
+        let vm = vm();
+        vm.exec("answer = 99").unwrap();
+        assert!(matches!(vm.get_global("answer").unwrap(), Value::Integer(99)));
+    }
+
+    #[test]
+    fn eval_equals_run() {
+        let vm = vm();
+        assert!(matches!(vm.eval("return true").unwrap(), Value::Boolean(true)));
+    }
+
+    #[test]
+    fn set_global_all_types() {
+        let vm = vm();
+        vm.set_global("a", Value::Nil).unwrap();
+        vm.set_global("b", Value::Boolean(true)).unwrap();
+        vm.set_global("c", Value::Integer(7)).unwrap();
+        vm.set_global("d", Value::Number(1.5)).unwrap();
+        vm.set_global("e", Value::LuaString("hi".into())).unwrap();
+        assert!(matches!(vm.get_global("a").unwrap(), Value::Nil));
+        assert!(matches!(vm.get_global("b").unwrap(), Value::Boolean(true)));
+        assert!(matches!(vm.get_global("c").unwrap(), Value::Integer(7)));
+        assert!(matches!(vm.get_global("e").unwrap(), Value::LuaString(s) if s == "hi"));
+    }
+
+    #[test]
+    fn run_with_closure_sets_global() {
+        let vm = vm();
+        vm.run_with(|lua| {
+            lua.globals().set("injected", 123_i64)?;
+            Ok(())
+        })
+        .unwrap();
+        assert!(matches!(vm.get_global("injected").unwrap(), Value::Integer(123)));
+    }
+
+    #[test]
+    fn missing_global_is_nil() {
+        assert!(matches!(vm().get_global("__no_such_global__").unwrap(), Value::Nil));
+    }
+
+    #[test]
+    fn run_file_missing_path_errors() {
+        assert!(vm().run_file("/tmp/__luna_no_file_xyz__").is_err());
+    }
+
+    #[test]
+    fn syntax_error_propagates() {
+        assert!(matches!(
+            vm().exec("this is not lua !!!"),
+            Err(Error::Syntax { .. })
+        ));
+    }
+
+    #[test]
+    fn runtime_error_propagates() {
+        assert!(matches!(
+            vm().exec("error('boom')"),
+            Err(Error::Runtime { .. })
+        ));
+    }
+}

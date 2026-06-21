@@ -21,3 +21,54 @@ impl From<mlua::Value> for Value {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mlua::{Lua, LuaOptions, StdLib};
+
+    fn lua() -> Lua {
+        Lua::new_with(StdLib::NONE, LuaOptions::default()).unwrap()
+    }
+
+    #[test]
+    fn nil() {
+        assert!(matches!(Value::from(mlua::Value::Nil), Value::Nil));
+    }
+
+    #[test]
+    fn boolean_true_and_false() {
+        assert!(matches!(Value::from(mlua::Value::Boolean(true)), Value::Boolean(true)));
+        assert!(matches!(Value::from(mlua::Value::Boolean(false)), Value::Boolean(false)));
+    }
+
+    #[test]
+    fn integer() {
+        assert!(matches!(Value::from(mlua::Value::Integer(42)), Value::Integer(42)));
+    }
+
+    #[test]
+    fn negative_integer() {
+        assert!(matches!(Value::from(mlua::Value::Integer(-7)), Value::Integer(-7)));
+    }
+
+    #[test]
+    fn number() {
+        let Value::Number(n) = Value::from(mlua::Value::Number(3.14)) else { panic!() };
+        assert!((n - 3.14).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn string() {
+        let lua = lua();
+        let s = lua.create_string("hello").unwrap();
+        assert!(matches!(Value::from(mlua::Value::String(s)), Value::LuaString(v) if v == "hello"));
+    }
+
+    #[test]
+    fn table_maps_to_nil() {
+        let lua = lua();
+        let t = lua.create_table().unwrap();
+        assert!(matches!(Value::from(mlua::Value::Table(t)), Value::Nil));
+    }
+}

@@ -90,3 +90,57 @@ impl Default for ModuleBuilder {
         crate::default_module_builder()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mlua::{Function, Lua, LuaOptions, StdLib};
+
+    fn noop_init(_lua: &Lua) -> mlua::Result<()> {
+        Ok(())
+    }
+    fn noop_preload(lua: &Lua) -> mlua::Result<Table> {
+        lua.create_table()
+    }
+
+    #[test]
+    fn empty_builder_attaches_cleanly() {
+        let lua = Lua::new_with(StdLib::ALL_SAFE, LuaOptions::default()).unwrap();
+        let (g, p) = ModuleBuilder::new().build();
+        g.attach(&lua).unwrap();
+        p.attach(&lua).unwrap();
+    }
+
+    #[test]
+    fn with_global_registers_init_fn() {
+        let lua = Lua::new_with(StdLib::ALL_SAFE, LuaOptions::default()).unwrap();
+        let (g, _) = ModuleBuilder::new()
+            .with_global(noop_init)
+            .with_global(noop_init)
+            .build();
+        g.attach(&lua).unwrap();
+    }
+
+    #[test]
+    fn with_preload_registers_into_package_preload() {
+        let lua = Lua::new_with(StdLib::ALL_SAFE, LuaOptions::default()).unwrap();
+        let (_, p) = ModuleBuilder::new()
+            .with_preload("alpha", noop_preload)
+            .with_preload("beta", noop_preload)
+            .build();
+        p.attach(&lua).unwrap();
+        let pkg: Table = lua.globals().get("package").unwrap();
+        let preload: Table = pkg.get("preload").unwrap();
+        assert!(preload.get::<Function>("alpha").is_ok());
+        assert!(preload.get::<Function>("beta").is_ok());
+    }
+
+    #[test]
+    fn preload_silently_skips_when_package_absent() {
+        let lua = Lua::new_with(StdLib::NONE, LuaOptions::default()).unwrap();
+        let (_, p) = ModuleBuilder::new()
+            .with_preload("mod", noop_preload)
+            .build();
+        p.attach(&lua).unwrap(); // must not panic
+    }
+}

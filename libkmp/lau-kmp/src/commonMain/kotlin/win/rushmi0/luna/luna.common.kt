@@ -114,15 +114,9 @@ public interface LuaVmInterface {
     @Throws(LuaException::class)
     public fun `getGlobal`(`name`: kotlin.String): LuaValue
     
-    /**
-     * Evaluate `source` and return the first produced value.
-     */
     @Throws(LuaException::class)
     public fun `run`(`source`: kotlin.String): LuaValue
     
-    /**
-     * Load a `.lua` file from `path` and execute it.
-     */
     @Throws(LuaException::class)
     public fun `runFile`(`path`: kotlin.String)
     
@@ -159,15 +153,9 @@ public expect open class LuaVm: Disposable, LuaVmInterface {
     @Throws(LuaException::class)
     public override fun `getGlobal`(`name`: kotlin.String): LuaValue
     
-    /**
-     * Evaluate `source` and return the first produced value.
-     */
     @Throws(LuaException::class)
     public override fun `run`(`source`: kotlin.String): LuaValue
     
-    /**
-     * Load a `.lua` file from `path` and execute it.
-     */
     @Throws(LuaException::class)
     public override fun `runFile`(`path`: kotlin.String)
     
@@ -191,10 +179,50 @@ public expect open class LuaVm: Disposable, LuaVmInterface {
 
 
 public data class LuaConfig (
-    var `stdlib`: LuaStdLib
+    var `stdlib`: LuaStdLib, 
+    var `modules`: LuaModules
 ) {
     public companion object
 }
+
+
+
+/**
+ * Per-module enable flags.  All fields default to `true` so an explicit
+ * `LuaConfig` with some fields disabled behaves as a sandbox.
+ */
+
+public data class LuaModules (
+    var `console`: kotlin.Boolean, 
+    var `timer`: kotlin.Boolean, 
+    var `env`: kotlin.Boolean, 
+    var `process`: kotlin.Boolean, 
+    var `http`: kotlin.Boolean, 
+    var `fs`: kotlin.Boolean, 
+    var `server`: kotlin.Boolean
+) {
+    public companion object
+}
+
+
+
+
+/**
+ * Log verbosity, exposed to every platform via UniFFI.
+ */
+
+
+public enum class LogLevel {
+    
+    ERROR,
+    WARN,
+    INFO,
+    DEBUG,
+    TRACE;
+    public companion object
+}
+
+
 
 
 
@@ -273,4 +301,6 @@ public sealed class LuaValue {
 }
 
 
+
+public expect fun `initLogger`(`level`: LogLevel)
 

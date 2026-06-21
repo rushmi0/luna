@@ -61,10 +61,11 @@ pub fn preload(lua: &Lua) -> mlua::Result<Table> {
             let lua = lua_arc.clone();
             async move {
                 let router = build_router(lua, routes);
-                let addr = format!("127.0.0.1:{port}");
+                let addr = format!("0.0.0.0:{port}");
                 let listener = TcpListener::bind(&addr)
                     .await
                     .map_err(|e| mlua::Error::RuntimeError(e.to_string()))?;
+                tracing::info!("Luna server listening on {addr}");
                 axum::serve(listener, router)
                     .await
                     .map_err(|e| mlua::Error::RuntimeError(e.to_string()))
@@ -194,5 +195,59 @@ fn lua_to_response(value: Value) -> Response {
         }
 
         _ => StatusCode::NO_CONTENT.into_response(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mlua::{LuaOptions, StdLib};
+
+    fn lua() -> Lua {
+        Lua::new_with(StdLib::ALL_SAFE, LuaOptions::default()).unwrap()
+    }
+
+    #[test]
+    fn coerce_path_converts_colon_param() {
+        assert_eq!(coerce_path("/user/:id"), "/user/{id}");
+    }
+
+    #[test]
+    fn coerce_path_leaves_axum_style_unchanged() {
+        assert_eq!(coerce_path("/user/{id}"), "/user/{id}");
+    }
+
+    #[test]
+    fn coerce_path_multiple_params() {
+        assert_eq!(coerce_path("/a/:b/c/:d"), "/a/{b}/c/{d}");
+    }
+
+    #[test]
+    fn coerce_path_root_is_unchanged() {
+        assert_eq!(coerce_path("/"), "/");
+    }
+
+    #[test]
+    fn lua_to_response_string_gives_200() {
+        let lua = lua();
+        let s = lua.create_string("hello").unwrap();
+        let resp = lua_to_response(Value::String(s));
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn lua_to_response_table_custom_status() {
+        let lua = lua();
+        let t = lua.create_table().unwrap();
+        t.set("status", 201u16).unwrap();
+        t.set("body", "created").unwrap();
+        let resp = lua_to_response(Value::Table(t));
+        assert_eq!(resp.status(), StatusCode::CREATED);
+    }
+
+    #[test]
+    fn lua_to_response_nil_gives_204() {
+        let resp = lua_to_response(Value::Nil);
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
     }
 }

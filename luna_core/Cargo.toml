@@ -11,3 +11,4 @@ tokio = { workspace = true, features = ["rt"] }
 
 [dev-dependencies]
 mlua = { workspace = true, features = ["lua54", "vendored", "send"] }
+luna_modules = { path = "../luna_modules", features = ["lua54", "vendored"] }
