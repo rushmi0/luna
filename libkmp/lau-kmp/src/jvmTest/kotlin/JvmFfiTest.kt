@@ -1,5 +1,8 @@
-package org.siamdev.klua
+package win.rushmi0.luna
 
+import win.rushmi0.luna.LuaException
+import win.rushmi0.luna.LuaValue
+import win.rushmi0.luna.LuaVm
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

@@ -7,7 +7,7 @@ plugins {
     id("signing")
 }
 
-group = "org.siamdev"
+group = "win.rushmi0"
 version = "1.0.0"
 
 kotlin {
@@ -21,7 +21,7 @@ kotlin {
         }
     }
     androidLibrary {
-        namespace = "org.siamdev.klua"
+        namespace = "org.siamdev.luna"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 

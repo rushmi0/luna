@@ -1,5 +1,10 @@
-package org.siamdev.klua
+package win.rushmi0.luna
 
+import win.rushmi0.luna.LuaConfig
+import win.rushmi0.luna.LuaException
+import win.rushmi0.luna.LuaStdLib
+import win.rushmi0.luna.LuaValue
+import win.rushmi0.luna.LuaVm
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -9,6 +14,39 @@ import kotlin.test.assertFalse
 
 class FfiTest {
 
+    @Test
+    fun `with_config All stdlib`() {
+        val vm = LuaVm.withConfig(
+            LuaConfig(stdlib = LuaStdLib.ALL)
+        )
+
+        val result = vm.eval("return type(io)")
+
+        assertIs<LuaValue.LuaString>(result)
+        assertEquals("table", result.v1)
+    }
+
+    @Test
+    fun `with_config Safe stdlib no io`() {
+        val vm = LuaVm.withConfig(
+            LuaConfig(stdlib = LuaStdLib.SAFE)
+        )
+
+        val result = vm.eval("return io")
+
+        assertIs<LuaValue.Nil>(result)
+    }
+
+    @Test
+    fun `with_config None stdlib`() {
+        val vm = LuaVm.withConfig(
+            LuaConfig(stdlib = LuaStdLib.NONE)
+        )
+
+        val result = vm.eval("return tostring")
+
+        assertIs<LuaValue.Nil>(result)
+    }
 
     @Test
     fun `default vm runs arithmetic`() {

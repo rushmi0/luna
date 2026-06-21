@@ -13,8 +13,8 @@ native_dir  := src_dir / "nativeMain"
 jvm_dir     := src_dir / "jvmMain"
 artifact    := "luna"
 
-# Full pipeline (add ios before clean-kmp when building on macOS)
-default: build-host build-android build-linux clean-kmp generate-bindings copy-android copy-linux-glibc copy-linux-musl copy-freebsd copy-windows build-kmp
+# Full pipeline (add ios before clean-kmp when building on macOS) : build-windows
+default: build-host build-android build-linux  clean-kmp generate-bindings copy-android copy-linux-glibc copy-linux-musl copy-freebsd copy-windows build-kmp
 
 # Build and copy Android libs
 android: build-android copy-android
@@ -26,7 +26,7 @@ ios: build-ios copy-ios
 linux: build-linux copy-linux-glibc copy-linux-musl copy-freebsd
 
 # Build and copy all JVM resources (Linux + Windows; add macos on macOS)
-jvm: linux copy-windows
+jvm: linux #build-windows copy-windows
 
 
 # Host Linux x86_64 — used by gobley-uniffi-bindgen

@@ -1,16 +1,16 @@
 [versions]
 agp = "9.0.1"
-kotlin = "2.3.10"
+kotlin = "2.4.0"
 android-minSdk = "24"
 android-compileSdk = "36"
 vanniktechMavenPublish = "0.36.0"
 
-jna = "5.15.0"
-okio = "3.9.0"
-atomicfu = "0.28.0"
-kotlinx-coroutines = "1.8.1"
-kotlinx-datetime = "0.6.0"
-androidx-test-runner = "1.6.2"
+jna = "5.19.1"
+okio = "3.17.0"
+atomicfu = "0.33.0"
+kotlinx-coroutines = "1.11.0"
+kotlinx-datetime = "0.8.0"
+androidx-test-runner = "1.7.0"
 
 
 [libraries]
