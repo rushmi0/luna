@@ -1,0 +1,2 @@
+headers = libluna.h
+staticLibraries = libluna.a

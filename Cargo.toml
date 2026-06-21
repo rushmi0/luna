@@ -1,0 +1,52 @@
+[workspace]
+members = ["luna_core", "luna_modules"]
+resolver = "2"
+
+[workspace.dependencies]
+mlua = { version = "0.11.6", default-features = false }
+thiserror = "2"
+ureq = "2"
+tokio = { version = "1" }
+
+[package]
+name = "luna"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "luna"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[features]
+default = ["lua54", "send", "serialize", "async"]
+lua55 = ["luna_modules/lua55"]
+lua54 = ["luna_modules/lua54"]
+lua53 = ["luna_modules/lua53"]
+lua52 = ["luna_modules/lua52"]
+lua51 = ["luna_modules/lua51"]
+luajit = ["luna_modules/luajit"]
+luajit52 = ["luna_modules/luajit52"]
+luau = ["luna_modules/luau"]
+luau-jit = ["luna_modules/luau-jit"]
+luau-vector4 = ["luna_modules/luau-vector4"]
+
+send = ["luna_modules/send"]
+serialize = ["luna_modules/serialize"]
+async = ["luna_modules/async"]
+macros = ["luna_modules/macros"]
+module = ["luna_modules/module"]
+anyhow = ["luna_modules/anyhow"]
+error-send = ["luna_modules/error-send"]
+userdata-wrappers = ["luna_modules/userdata-wrappers"]
+vendored = ["luna_modules/vendored"]
+
+[dependencies]
+luna_core = { path = "luna_core", default-features = false }
+luna_modules = { path = "luna_modules", default-features = false }
+uniffi = { version = "=0.29.5", features = ["tokio", "cli"] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }
+
+[dev-dependencies]
+tempfile = "3"
+ureq = { workspace = true }

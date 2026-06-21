@@ -1,0 +1,38 @@
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# Android: align shared-object page size for Android 15 16 KiB page support.
+[target.aarch64-linux-android]
+rustflags = ["-Clink-arg=-Wl,-z,max-page-size=16384"]
+
+[target.armv7-linux-androideabi]
+rustflags = ["-Clink-arg=-Wl,-z,max-page-size=16384"]
+
+[target.i686-linux-android]
+rustflags = ["-Clink-arg=-Wl,-z,max-page-size=16384"]
+
+[target.x86_64-linux-android]
+rustflags = ["-Clink-arg=-Wl,-z,max-page-size=16384"]
+
+# musl: dynamic CRT so the host libc is used instead of a bundled static one.
+[target.x86_64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=-crt-static"]
+
+[target.aarch64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=-crt-static"]
+
+[target.armv7-unknown-linux-musleabihf]
+rustflags = ["-C", "target-feature=-crt-static"]
+
+[target.i686-unknown-linux-musl]
+rustflags = ["-C", "target-feature=-crt-static"]
+
+[target.riscv64gc-unknown-linux-musl]
+rustflags = ["-C", "target-feature=-crt-static"]
+
+[target.'cfg(all(target_env = "musl", target_os = "linux"))']
+rustflags = ["-C", "target-feature=-crt-static"]

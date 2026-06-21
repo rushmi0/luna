@@ -1,0 +1,28 @@
+[versions]
+agp = "9.0.1"
+kotlin = "2.3.10"
+android-minSdk = "24"
+android-compileSdk = "36"
+vanniktechMavenPublish = "0.36.0"
+
+jna = "5.15.0"
+okio = "3.9.0"
+atomicfu = "0.28.0"
+kotlinx-coroutines = "1.8.1"
+kotlinx-datetime = "0.6.0"
+androidx-test-runner = "1.6.2"
+
+
+[libraries]
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
+
+[plugins]
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
