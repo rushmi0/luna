@@ -1,6 +1,5 @@
 use tracing::Level;
 
-/// Log verbosity, exposed to every platform via UniFFI.
 #[derive(Debug, Clone, uniffi::Enum)]
 pub enum LogLevel {
     Error,
@@ -22,7 +21,6 @@ impl From<LogLevel> for Level {
     }
 }
 
-// ── Desktop (Linux / macOS / Windows) ────────────────────────────────────────
 
 #[uniffi::export]
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -36,8 +34,6 @@ pub fn init_logger(level: LogLevel) {
         Err(e) => eprintln!("Luna: failed to initialize logger: {e}"),
     }
 }
-
-// ── Mobile (Android + iOS) ────────────────────────────────────────────────────
 
 #[uniffi::export]
 #[cfg(any(target_os = "android", target_os = "ios"))]

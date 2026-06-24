@@ -164,18 +164,18 @@ generate-bindings: setup
 build-kmp:
     cd "{{script_dir}}/libkmp" && ./gradlew :lau-kmp:assemble
 
-# Run all lau-kmp tests that can execute on the current host
+# Run all lau-kmp test that can execute on the current host
 test-kmp: test-kmp-jvm test-kmp-android
 
-# Run lau-kmp JVM tests
+# Run lau-kmp JVM test
 test-kmp-jvm:
     cd "{{script_dir}}/libkmp" && ./gradlew :lau-kmp:jvmTest
 
-# Run lau-kmp Android host tests (runs on JVM, no device needed)
+# Run lau-kmp Android host test (runs on JVM, no device needed)
 test-kmp-android:
     cd "{{script_dir}}/libkmp" && ./gradlew :lau-kmp:testAndroidHostTest
 
-# Run lau-kmp iOS simulator tests (macOS only)
+# Run lau-kmp iOS simulator test (macOS only)
 test-kmp-ios:
     cd "{{script_dir}}/libkmp" && ./gradlew :lau-kmp:iosSimulatorArm64Test
 

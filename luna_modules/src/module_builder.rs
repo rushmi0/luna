@@ -83,6 +83,27 @@ impl ModuleBuilder {
     pub fn build(self) -> (GlobalAttachment, PreloadEntries) {
         (self.globals, self.preloads)
     }
+
+    /// Attach all globals and preload entries to `lua` without consuming the builder.
+    pub fn apply(&self, lua: &Lua) -> Result<()> {
+        for f in &self.globals.functions {
+            f(lua)?;
+        }
+        if self.preloads.entries.is_empty() {
+            return Ok(());
+        }
+        let Some(pkg) = lua.globals().get::<Option<Table>>("package")? else {
+            return Ok(());
+        };
+        let Ok(preload) = pkg.get::<Table>("preload") else {
+            return Ok(());
+        };
+        for (name, loader) in &self.preloads.entries {
+            let loader = *loader;
+            preload.set(*name, lua.create_function(move |lua, ()| loader(lua))?)?;
+        }
+        Ok(())
+    }
 }
 
 impl Default for ModuleBuilder {

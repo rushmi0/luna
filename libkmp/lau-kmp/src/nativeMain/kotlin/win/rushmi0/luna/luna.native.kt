@@ -1256,53 +1256,53 @@ internal interface UniffiLib {
         }
     }
 
-    fun uniffi_luna_fn_clone_luavm(
+    fun uniffi_luna_fn_clone_vm(
         `ptr`: Pointer?,
         uniffiCallStatus: UniffiRustCallStatus,
     ): Pointer?
-    fun uniffi_luna_fn_free_luavm(
+    fun uniffi_luna_fn_free_vm(
         `ptr`: Pointer?,
         uniffiCallStatus: UniffiRustCallStatus,
     ): Unit
-    fun uniffi_luna_fn_constructor_luavm_new(
+    fun uniffi_luna_fn_constructor_vm_new(
         uniffiCallStatus: UniffiRustCallStatus,
     ): Pointer?
-    fun uniffi_luna_fn_constructor_luavm_with_config(
+    fun uniffi_luna_fn_constructor_vm_with_config(
         `config`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
     ): Pointer?
-    fun uniffi_luna_fn_method_luavm_eval(
+    fun uniffi_luna_fn_method_vm_eval(
         `ptr`: Pointer?,
         `script`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
     ): RustBufferByValue
-    fun uniffi_luna_fn_method_luavm_exec(
+    fun uniffi_luna_fn_method_vm_exec(
         `ptr`: Pointer?,
         `script`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
     ): Unit
-    fun uniffi_luna_fn_method_luavm_get_global(
+    fun uniffi_luna_fn_method_vm_get_global(
         `ptr`: Pointer?,
         `name`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
     ): RustBufferByValue
-    fun uniffi_luna_fn_method_luavm_run(
+    fun uniffi_luna_fn_method_vm_run(
         `ptr`: Pointer?,
         `source`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
     ): RustBufferByValue
-    fun uniffi_luna_fn_method_luavm_run_file(
+    fun uniffi_luna_fn_method_vm_run_file(
         `ptr`: Pointer?,
         `path`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
     ): Unit
-    fun uniffi_luna_fn_method_luavm_set_global(
+    fun uniffi_luna_fn_method_vm_set_global(
         `ptr`: Pointer?,
         `name`: RustBufferByValue,
         `value`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
     ): Unit
-    fun uniffi_luna_fn_method_luavm_version(
+    fun uniffi_luna_fn_method_vm_version(
         `ptr`: Pointer?,
         uniffiCallStatus: UniffiRustCallStatus,
     ): RustBufferByValue
@@ -1524,23 +1524,23 @@ internal interface UniffiLib {
     ): Unit
     fun uniffi_luna_checksum_func_init_logger(
     ): Short
-    fun uniffi_luna_checksum_method_luavm_eval(
+    fun uniffi_luna_checksum_method_vm_eval(
     ): Short
-    fun uniffi_luna_checksum_method_luavm_exec(
+    fun uniffi_luna_checksum_method_vm_exec(
     ): Short
-    fun uniffi_luna_checksum_method_luavm_get_global(
+    fun uniffi_luna_checksum_method_vm_get_global(
     ): Short
-    fun uniffi_luna_checksum_method_luavm_run(
+    fun uniffi_luna_checksum_method_vm_run(
     ): Short
-    fun uniffi_luna_checksum_method_luavm_run_file(
+    fun uniffi_luna_checksum_method_vm_run_file(
     ): Short
-    fun uniffi_luna_checksum_method_luavm_set_global(
+    fun uniffi_luna_checksum_method_vm_set_global(
     ): Short
-    fun uniffi_luna_checksum_method_luavm_version(
+    fun uniffi_luna_checksum_method_vm_version(
     ): Short
-    fun uniffi_luna_checksum_constructor_luavm_new(
+    fun uniffi_luna_checksum_constructor_vm_new(
     ): Short
-    fun uniffi_luna_checksum_constructor_luavm_with_config(
+    fun uniffi_luna_checksum_constructor_vm_with_config(
     ): Short
     fun ffi_luna_uniffi_contract_version(
     ): Int
@@ -1548,92 +1548,92 @@ internal interface UniffiLib {
 }
 
 internal class UniffiLibInstance: UniffiLib {
-    override fun uniffi_luna_fn_clone_luavm(
+    override fun uniffi_luna_fn_clone_vm(
         `ptr`: Pointer?,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): Pointer? = luna.cinterop.uniffi_luna_fn_clone_luavm(
+    ): Pointer? = luna.cinterop.uniffi_luna_fn_clone_vm(
         `ptr`,
         uniffiCallStatus,
     )
-    override fun uniffi_luna_fn_free_luavm(
+    override fun uniffi_luna_fn_free_vm(
         `ptr`: Pointer?,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): Unit = luna.cinterop.uniffi_luna_fn_free_luavm(
+    ): Unit = luna.cinterop.uniffi_luna_fn_free_vm(
         `ptr`,
         uniffiCallStatus,
     )
-    override fun uniffi_luna_fn_constructor_luavm_new(
+    override fun uniffi_luna_fn_constructor_vm_new(
         uniffiCallStatus: UniffiRustCallStatus,
-    ): Pointer? = luna.cinterop.uniffi_luna_fn_constructor_luavm_new(
+    ): Pointer? = luna.cinterop.uniffi_luna_fn_constructor_vm_new(
         uniffiCallStatus,
     )
-    override fun uniffi_luna_fn_constructor_luavm_with_config(
+    override fun uniffi_luna_fn_constructor_vm_with_config(
         `config`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): Pointer? = luna.cinterop.uniffi_luna_fn_constructor_luavm_with_config(
+    ): Pointer? = luna.cinterop.uniffi_luna_fn_constructor_vm_with_config(
         `config`,
         uniffiCallStatus,
     )
-    override fun uniffi_luna_fn_method_luavm_eval(
+    override fun uniffi_luna_fn_method_vm_eval(
         `ptr`: Pointer?,
         `script`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): RustBufferByValue = luna.cinterop.uniffi_luna_fn_method_luavm_eval(
+    ): RustBufferByValue = luna.cinterop.uniffi_luna_fn_method_vm_eval(
         `ptr`,
         `script`,
         uniffiCallStatus,
     )
-    override fun uniffi_luna_fn_method_luavm_exec(
+    override fun uniffi_luna_fn_method_vm_exec(
         `ptr`: Pointer?,
         `script`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): Unit = luna.cinterop.uniffi_luna_fn_method_luavm_exec(
+    ): Unit = luna.cinterop.uniffi_luna_fn_method_vm_exec(
         `ptr`,
         `script`,
         uniffiCallStatus,
     )
-    override fun uniffi_luna_fn_method_luavm_get_global(
+    override fun uniffi_luna_fn_method_vm_get_global(
         `ptr`: Pointer?,
         `name`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): RustBufferByValue = luna.cinterop.uniffi_luna_fn_method_luavm_get_global(
+    ): RustBufferByValue = luna.cinterop.uniffi_luna_fn_method_vm_get_global(
         `ptr`,
         `name`,
         uniffiCallStatus,
     )
-    override fun uniffi_luna_fn_method_luavm_run(
+    override fun uniffi_luna_fn_method_vm_run(
         `ptr`: Pointer?,
         `source`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): RustBufferByValue = luna.cinterop.uniffi_luna_fn_method_luavm_run(
+    ): RustBufferByValue = luna.cinterop.uniffi_luna_fn_method_vm_run(
         `ptr`,
         `source`,
         uniffiCallStatus,
     )
-    override fun uniffi_luna_fn_method_luavm_run_file(
+    override fun uniffi_luna_fn_method_vm_run_file(
         `ptr`: Pointer?,
         `path`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): Unit = luna.cinterop.uniffi_luna_fn_method_luavm_run_file(
+    ): Unit = luna.cinterop.uniffi_luna_fn_method_vm_run_file(
         `ptr`,
         `path`,
         uniffiCallStatus,
     )
-    override fun uniffi_luna_fn_method_luavm_set_global(
+    override fun uniffi_luna_fn_method_vm_set_global(
         `ptr`: Pointer?,
         `name`: RustBufferByValue,
         `value`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): Unit = luna.cinterop.uniffi_luna_fn_method_luavm_set_global(
+    ): Unit = luna.cinterop.uniffi_luna_fn_method_vm_set_global(
         `ptr`,
         `name`,
         `value`,
         uniffiCallStatus,
     )
-    override fun uniffi_luna_fn_method_luavm_version(
+    override fun uniffi_luna_fn_method_vm_version(
         `ptr`: Pointer?,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): RustBufferByValue = luna.cinterop.uniffi_luna_fn_method_luavm_version(
+    ): RustBufferByValue = luna.cinterop.uniffi_luna_fn_method_vm_version(
         `ptr`,
         uniffiCallStatus,
     )
@@ -2015,32 +2015,32 @@ internal class UniffiLibInstance: UniffiLib {
     override fun uniffi_luna_checksum_func_init_logger(
     ): Short = luna.cinterop.uniffi_luna_checksum_func_init_logger(
     )
-    override fun uniffi_luna_checksum_method_luavm_eval(
-    ): Short = luna.cinterop.uniffi_luna_checksum_method_luavm_eval(
+    override fun uniffi_luna_checksum_method_vm_eval(
+    ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_eval(
     )
-    override fun uniffi_luna_checksum_method_luavm_exec(
-    ): Short = luna.cinterop.uniffi_luna_checksum_method_luavm_exec(
+    override fun uniffi_luna_checksum_method_vm_exec(
+    ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_exec(
     )
-    override fun uniffi_luna_checksum_method_luavm_get_global(
-    ): Short = luna.cinterop.uniffi_luna_checksum_method_luavm_get_global(
+    override fun uniffi_luna_checksum_method_vm_get_global(
+    ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_get_global(
     )
-    override fun uniffi_luna_checksum_method_luavm_run(
-    ): Short = luna.cinterop.uniffi_luna_checksum_method_luavm_run(
+    override fun uniffi_luna_checksum_method_vm_run(
+    ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_run(
     )
-    override fun uniffi_luna_checksum_method_luavm_run_file(
-    ): Short = luna.cinterop.uniffi_luna_checksum_method_luavm_run_file(
+    override fun uniffi_luna_checksum_method_vm_run_file(
+    ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_run_file(
     )
-    override fun uniffi_luna_checksum_method_luavm_set_global(
-    ): Short = luna.cinterop.uniffi_luna_checksum_method_luavm_set_global(
+    override fun uniffi_luna_checksum_method_vm_set_global(
+    ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_set_global(
     )
-    override fun uniffi_luna_checksum_method_luavm_version(
-    ): Short = luna.cinterop.uniffi_luna_checksum_method_luavm_version(
+    override fun uniffi_luna_checksum_method_vm_version(
+    ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_version(
     )
-    override fun uniffi_luna_checksum_constructor_luavm_new(
-    ): Short = luna.cinterop.uniffi_luna_checksum_constructor_luavm_new(
+    override fun uniffi_luna_checksum_constructor_vm_new(
+    ): Short = luna.cinterop.uniffi_luna_checksum_constructor_vm_new(
     )
-    override fun uniffi_luna_checksum_constructor_luavm_with_config(
-    ): Short = luna.cinterop.uniffi_luna_checksum_constructor_luavm_with_config(
+    override fun uniffi_luna_checksum_constructor_vm_with_config(
+    ): Short = luna.cinterop.uniffi_luna_checksum_constructor_vm_with_config(
     )
     override fun ffi_luna_uniffi_contract_version(
     ): Int = luna.cinterop.ffi_luna_uniffi_contract_version(
@@ -2219,7 +2219,7 @@ public object FfiConverterString: FfiConverter<String, RustBufferByValue> {
 
 
 
-public actual open class LuaVm: Disposable, LuaVmInterface {
+public actual open class Vm: Disposable, VmInterface {
 
     public constructor(pointer: Pointer) {
         this.pointer = pointer
@@ -2237,7 +2237,7 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
     }
     public actual constructor() : this(
         uniffiRustCall { uniffiRustCallStatus ->
-            UniffiLib.INSTANCE.uniffi_luna_fn_constructor_luavm_new(
+            UniffiLib.INSTANCE.uniffi_luna_fn_constructor_vm_new(
                 uniffiRustCallStatus,
             )
         }!!
@@ -2304,7 +2304,7 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
         override fun destroy() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_luna_fn_free_luavm(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_luna_fn_free_vm(ptr, status)
                 }
             }
         }
@@ -2312,7 +2312,7 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
 
     public fun uniffiClonePointer(): Pointer {
         return uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_luna_fn_clone_luavm(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_luna_fn_clone_vm(pointer!!, status)
         }!!
     }
 
@@ -2321,7 +2321,7 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
     public actual override fun `eval`(`script`: kotlin.String): LuaValue {
         return FfiConverterTypeLuaValue.lift(callWithPointer {
             uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
-                UniffiLib.INSTANCE.uniffi_luna_fn_method_luavm_eval(
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_eval(
                     it,
                     FfiConverterString.lower(`script`),
                     uniffiRustCallStatus,
@@ -2334,7 +2334,7 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
     public actual override fun `exec`(`script`: kotlin.String) {
         callWithPointer {
             uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
-                UniffiLib.INSTANCE.uniffi_luna_fn_method_luavm_exec(
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_exec(
                     it,
                     FfiConverterString.lower(`script`),
                     uniffiRustCallStatus,
@@ -2347,7 +2347,7 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
     public actual override fun `getGlobal`(`name`: kotlin.String): LuaValue {
         return FfiConverterTypeLuaValue.lift(callWithPointer {
             uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
-                UniffiLib.INSTANCE.uniffi_luna_fn_method_luavm_get_global(
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_get_global(
                     it,
                     FfiConverterString.lower(`name`),
                     uniffiRustCallStatus,
@@ -2360,7 +2360,7 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
     public actual override fun `run`(`source`: kotlin.String): LuaValue {
         return FfiConverterTypeLuaValue.lift(callWithPointer {
             uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
-                UniffiLib.INSTANCE.uniffi_luna_fn_method_luavm_run(
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_run(
                     it,
                     FfiConverterString.lower(`source`),
                     uniffiRustCallStatus,
@@ -2373,7 +2373,7 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
     public actual override fun `runFile`(`path`: kotlin.String) {
         callWithPointer {
             uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
-                UniffiLib.INSTANCE.uniffi_luna_fn_method_luavm_run_file(
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_run_file(
                     it,
                     FfiConverterString.lower(`path`),
                     uniffiRustCallStatus,
@@ -2386,7 +2386,7 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
     public actual override fun `setGlobal`(`name`: kotlin.String, `value`: LuaValue) {
         callWithPointer {
             uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
-                UniffiLib.INSTANCE.uniffi_luna_fn_method_luavm_set_global(
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_set_global(
                     it,
                     FfiConverterString.lower(`name`),
                     FfiConverterTypeLuaValue.lower(`value`),
@@ -2399,7 +2399,7 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
     public actual override fun `version`(): kotlin.String {
         return FfiConverterString.lift(callWithPointer {
             uniffiRustCall { uniffiRustCallStatus ->
-                UniffiLib.INSTANCE.uniffi_luna_fn_method_luavm_version(
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_version(
                     it,
                     uniffiRustCallStatus,
                 )
@@ -2412,10 +2412,10 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
     public actual companion object {
         
         @Throws(LuaException::class)
-        public actual fun `withConfig`(`config`: LuaConfig): LuaVm {
-            return FfiConverterTypeLuaVm.lift(uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
-                UniffiLib.INSTANCE.uniffi_luna_fn_constructor_luavm_with_config(
-                    FfiConverterTypeLuaConfig.lower(`config`),
+        public actual fun `withConfig`(`config`: LunaConfig): Vm {
+            return FfiConverterTypeVm.lift(uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
+                UniffiLib.INSTANCE.uniffi_luna_fn_constructor_vm_with_config(
+                    FfiConverterTypeLunaConfig.lower(`config`),
                     uniffiRustCallStatus,
                 )
             }!!)
@@ -2430,25 +2430,25 @@ public actual open class LuaVm: Disposable, LuaVmInterface {
 
 
 
-public object FfiConverterTypeLuaVm: FfiConverter<LuaVm, Pointer> {
+public object FfiConverterTypeVm: FfiConverter<Vm, Pointer> {
 
-    override fun lower(value: LuaVm): Pointer {
+    override fun lower(value: Vm): Pointer {
         return value.uniffiClonePointer()
     }
 
-    override fun lift(value: Pointer): LuaVm {
-        return LuaVm(value)
+    override fun lift(value: Pointer): Vm {
+        return Vm(value)
     }
 
-    override fun read(buf: ByteBuffer): LuaVm {
+    override fun read(buf: ByteBuffer): Vm {
         // The Rust code always writes pointers as 8 bytes, and will
         // fail to compile if they don't fit.
         return lift(buf.getLong().toPointer())
     }
 
-    override fun allocationSize(value: LuaVm): ULong = 8UL
+    override fun allocationSize(value: Vm): ULong = 8UL
 
-    override fun write(value: LuaVm, buf: ByteBuffer) {
+    override fun write(value: Vm, buf: ByteBuffer) {
         // The Rust code always expects pointers written as 8 bytes,
         // and will fail to compile if they don't fit.
         buf.putLong(lower(value).toLong())
@@ -2458,59 +2458,25 @@ public object FfiConverterTypeLuaVm: FfiConverter<LuaVm, Pointer> {
 
 
 
-public object FfiConverterTypeLuaConfig: FfiConverterRustBuffer<LuaConfig> {
-    override fun read(buf: ByteBuffer): LuaConfig {
-        return LuaConfig(
+public object FfiConverterTypeLunaConfig: FfiConverterRustBuffer<LunaConfig> {
+    override fun read(buf: ByteBuffer): LunaConfig {
+        return LunaConfig(
+            FfiConverterBoolean.read(buf),
             FfiConverterTypeLuaStdLib.read(buf),
-            FfiConverterTypeLuaModules.read(buf),
+            FfiConverterTypeLuaVersion.read(buf),
         )
     }
 
-    override fun allocationSize(value: LuaConfig): ULong = (
+    override fun allocationSize(value: LunaConfig): ULong = (
+            FfiConverterBoolean.allocationSize(value.`sandbox`) +
             FfiConverterTypeLuaStdLib.allocationSize(value.`stdlib`) +
-            FfiConverterTypeLuaModules.allocationSize(value.`modules`)
+            FfiConverterTypeLuaVersion.allocationSize(value.`version`)
     )
 
-    override fun write(value: LuaConfig, buf: ByteBuffer) {
+    override fun write(value: LunaConfig, buf: ByteBuffer) {
+        FfiConverterBoolean.write(value.`sandbox`, buf)
         FfiConverterTypeLuaStdLib.write(value.`stdlib`, buf)
-        FfiConverterTypeLuaModules.write(value.`modules`, buf)
-    }
-}
-
-
-
-
-public object FfiConverterTypeLuaModules: FfiConverterRustBuffer<LuaModules> {
-    override fun read(buf: ByteBuffer): LuaModules {
-        return LuaModules(
-            FfiConverterBoolean.read(buf),
-            FfiConverterBoolean.read(buf),
-            FfiConverterBoolean.read(buf),
-            FfiConverterBoolean.read(buf),
-            FfiConverterBoolean.read(buf),
-            FfiConverterBoolean.read(buf),
-            FfiConverterBoolean.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: LuaModules): ULong = (
-            FfiConverterBoolean.allocationSize(value.`console`) +
-            FfiConverterBoolean.allocationSize(value.`timer`) +
-            FfiConverterBoolean.allocationSize(value.`env`) +
-            FfiConverterBoolean.allocationSize(value.`process`) +
-            FfiConverterBoolean.allocationSize(value.`http`) +
-            FfiConverterBoolean.allocationSize(value.`fs`) +
-            FfiConverterBoolean.allocationSize(value.`server`)
-    )
-
-    override fun write(value: LuaModules, buf: ByteBuffer) {
-        FfiConverterBoolean.write(value.`console`, buf)
-        FfiConverterBoolean.write(value.`timer`, buf)
-        FfiConverterBoolean.write(value.`env`, buf)
-        FfiConverterBoolean.write(value.`process`, buf)
-        FfiConverterBoolean.write(value.`http`, buf)
-        FfiConverterBoolean.write(value.`fs`, buf)
-        FfiConverterBoolean.write(value.`server`, buf)
+        FfiConverterTypeLuaVersion.write(value.`version`, buf)
     }
 }
 
@@ -2548,7 +2514,10 @@ public object FfiConverterTypeLuaError : FfiConverterRustBuffer<LuaException> {
             2 -> LuaException.Runtime(
                 FfiConverterString.read(buf),
                 )
-            3 -> LuaException.Other(
+            3 -> LuaException.UnsupportedVersion(
+                FfiConverterString.read(buf),
+                )
+            4 -> LuaException.Other(
                 FfiConverterString.read(buf),
                 )
             else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
@@ -2563,6 +2532,11 @@ public object FfiConverterTypeLuaError : FfiConverterRustBuffer<LuaException> {
                 + FfiConverterString.allocationSize(value.`msg`)
             )
             is LuaException.Runtime -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.`msg`)
+            )
+            is LuaException.UnsupportedVersion -> (
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 4UL
                 + FfiConverterString.allocationSize(value.`msg`)
@@ -2587,8 +2561,13 @@ public object FfiConverterTypeLuaError : FfiConverterRustBuffer<LuaException> {
                 FfiConverterString.write(value.`msg`, buf)
                 Unit
             }
-            is LuaException.Other -> {
+            is LuaException.UnsupportedVersion -> {
                 buf.putInt(3)
+                FfiConverterString.write(value.`msg`, buf)
+                Unit
+            }
+            is LuaException.Other -> {
+                buf.putInt(4)
                 FfiConverterString.write(value.`msg`, buf)
                 Unit
             }
@@ -2702,6 +2681,24 @@ public object FfiConverterTypeLuaValue : FfiConverterRustBuffer<LuaValue>{
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+public object FfiConverterTypeLuaVersion: FfiConverterRustBuffer<LuaVersion> {
+    override fun read(buf: ByteBuffer): LuaVersion = try {
+        LuaVersion.entries[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: LuaVersion): ULong = 4UL
+
+    override fun write(value: LuaVersion, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 

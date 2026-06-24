@@ -103,7 +103,7 @@ public object NoPointer
 
 
 
-public interface LuaVmInterface {
+public interface VmInterface {
     
     @Throws(LuaException::class)
     public fun `eval`(`script`: kotlin.String): LuaValue
@@ -129,7 +129,7 @@ public interface LuaVmInterface {
 }
 
 
-public expect open class LuaVm: Disposable, LuaVmInterface {
+public expect open class Vm: Disposable, VmInterface {
     /**
      * This constructor can be used to instantiate a fake object. Only used for tests. Any
      * attempt to actually use an object constructed this way will fail as there is no
@@ -168,7 +168,7 @@ public expect open class LuaVm: Disposable, LuaVmInterface {
     public companion object {
         
         @Throws(LuaException::class)
-        public fun `withConfig`(`config`: LuaConfig): LuaVm
+        public fun `withConfig`(`config`: LunaConfig): Vm
         
     }
     
@@ -178,28 +178,10 @@ public expect open class LuaVm: Disposable, LuaVmInterface {
 
 
 
-public data class LuaConfig (
+public data class LunaConfig (
+    var `sandbox`: kotlin.Boolean, 
     var `stdlib`: LuaStdLib, 
-    var `modules`: LuaModules
-) {
-    public companion object
-}
-
-
-
-/**
- * Per-module enable flags.  All fields default to `true` so an explicit
- * `LuaConfig` with some fields disabled behaves as a sandbox.
- */
-
-public data class LuaModules (
-    var `console`: kotlin.Boolean, 
-    var `timer`: kotlin.Boolean, 
-    var `env`: kotlin.Boolean, 
-    var `process`: kotlin.Boolean, 
-    var `http`: kotlin.Boolean, 
-    var `fs`: kotlin.Boolean, 
-    var `server`: kotlin.Boolean
+    var `version`: LuaVersion
 ) {
     public companion object
 }
@@ -207,9 +189,6 @@ public data class LuaModules (
 
 
 
-/**
- * Log verbosity, exposed to every platform via UniFFI.
- */
 
 
 public enum class LogLevel {
@@ -238,6 +217,13 @@ public sealed class LuaException: kotlin.Exception() {
     }
     
     public class Runtime(
+        public val `msg`: kotlin.String,
+    ) : LuaException() {
+        override val message: String
+            get() = "msg=${ `msg` }"
+    }
+    
+    public class UnsupportedVersion(
         public val `msg`: kotlin.String,
     ) : LuaException() {
         override val message: String
@@ -298,6 +284,25 @@ public sealed class LuaValue {
     ) : LuaValue() {
     }
     
+}
+
+
+
+
+
+
+
+
+public enum class LuaVersion {
+    
+    LUA51,
+    LUA52,
+    LUA53,
+    LUA54,
+    LUA55,
+    LUAU,
+    LUA_JIT;
+    public companion object
 }
 
 

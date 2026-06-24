@@ -1,37 +1,40 @@
-use luna_modules::ModuleBuilder;
-
-pub enum StdLib {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LuaStdLib {
     All,
     Safe,
     None,
 }
 
-pub struct VmOptions {
-    pub stdlib: StdLib,
-    pub module_builder: ModuleBuilder,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LuaVersion {
+    Lua51,
+    Lua52,
+    Lua53,
+    Lua54,
+    Lua55,
+    Luau,
+    LuaJit,
 }
 
-impl Default for VmOptions {
+#[derive(Debug, Clone)]
+pub struct LunaConfig {
+    pub sandbox: bool,
+}
+
+impl Default for LunaConfig {
     fn default() -> Self {
-        Self {
-            stdlib: StdLib::All,
-            module_builder: ModuleBuilder::default(),
-        }
+        Self { sandbox: false }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[derive(Debug, Clone)]
+pub struct LuaOption {
+    pub stdlib: LuaStdLib,
+    pub version: LuaVersion,
+}
 
-    #[test]
-    fn default_stdlib_is_all() {
-        assert!(matches!(VmOptions::default().stdlib, StdLib::All));
-    }
-
-    #[test]
-    fn stdlib_variants_are_distinct() {
-        assert!(!matches!(StdLib::Safe, StdLib::All));
-        assert!(!matches!(StdLib::None, StdLib::Safe));
+impl Default for LuaOption {
+    fn default() -> Self {
+        Self { stdlib: LuaStdLib::All, version: LuaVersion::Lua54 }
     }
 }

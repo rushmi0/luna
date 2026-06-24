@@ -1,4 +1,3 @@
-pub mod console;
 pub mod env;
 pub mod fs;
 pub mod http;
@@ -11,7 +10,6 @@ pub use module_builder::ModuleBuilder;
 
 pub(crate) fn default_module_builder() -> ModuleBuilder {
     ModuleBuilder::new()
-        .with_global(console::init)
         .with_global(timer::init)
         .with_global(env::init)
         .with_global(process::init)

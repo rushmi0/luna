@@ -115,8 +115,6 @@ fn ensure_zig() {
     );
 }
 
-// ── Platform-specific compilation setup ──────────────────────────────────────
-
 /// Android-specific build configuration.
 ///
 /// All Android targets need the 16 KiB page-size flag so the .so is accepted

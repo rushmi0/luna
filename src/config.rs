@@ -1,5 +1,3 @@
-use luna_core::config::StdLib as CoreStdLib;
-
 #[derive(Debug, Clone, uniffi::Enum)]
 pub enum LuaStdLib {
     All,
@@ -7,80 +5,59 @@ pub enum LuaStdLib {
     None,
 }
 
-/// Per-module enable flags.  All fields default to `true` so an explicit
-/// `LuaConfig` with some fields disabled behaves as a sandbox.
-#[derive(Debug, Clone, uniffi::Record)]
-pub struct LuaModules {
-    pub console: bool,
-    pub timer: bool,
-    pub env: bool,
-    pub process: bool,
-    pub http: bool,
-    pub fs: bool,
-    pub server: bool,
-}
-
-impl Default for LuaModules {
-    fn default() -> Self {
-        Self {
-            console: true,
-            timer: true,
-            env: true,
-            process: true,
-            http: true,
-            fs: true,
-            server: true,
-        }
-    }
+#[derive(Debug, Clone, uniffi::Enum)]
+pub enum LuaVersion {
+    Lua51,
+    Lua52,
+    Lua53,
+    Lua54,
+    Lua55,
+    Luau,
+    LuaJit,
 }
 
 #[derive(Debug, Clone, uniffi::Record)]
-pub struct LuaConfig {
+pub struct LunaConfig {
+    pub sandbox: bool,
     pub stdlib: LuaStdLib,
-    pub modules: LuaModules,
+    pub version: LuaVersion,
 }
 
-impl LuaConfig {
-    pub(crate) fn core_stdlib(&self) -> CoreStdLib {
-        match self.stdlib {
-            LuaStdLib::All => CoreStdLib::All,
-            LuaStdLib::Safe => CoreStdLib::Safe,
-            LuaStdLib::None => CoreStdLib::None,
+impl Default for LunaConfig {
+    fn default() -> Self {
+        Self { sandbox: false, stdlib: LuaStdLib::All, version: LuaVersion::Lua54 }
+    }
+}
+
+impl From<LuaStdLib> for luna_core::LuaStdLib {
+    fn from(v: LuaStdLib) -> Self {
+        match v {
+            LuaStdLib::All  => Self::All,
+            LuaStdLib::Safe => Self::Safe,
+            LuaStdLib::None => Self::None,
         }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn lua_modules_default_all_enabled() {
-        let m = LuaModules::default();
-        assert!(m.console);
-        assert!(m.timer);
-        assert!(m.env);
-        assert!(m.process);
-        assert!(m.http);
-        assert!(m.fs);
-        assert!(m.server);
+impl From<LuaVersion> for luna_core::LuaVersion {
+    fn from(v: LuaVersion) -> Self {
+        match v {
+            LuaVersion::Lua51  => Self::Lua51,
+            LuaVersion::Lua52  => Self::Lua52,
+            LuaVersion::Lua53  => Self::Lua53,
+            LuaVersion::Lua54  => Self::Lua54,
+            LuaVersion::Lua55  => Self::Lua55,
+            LuaVersion::Luau   => Self::Luau,
+            LuaVersion::LuaJit => Self::LuaJit,
+        }
     }
+}
 
-    #[test]
-    fn core_stdlib_all() {
-        let cfg = LuaConfig { stdlib: LuaStdLib::All, modules: LuaModules::default() };
-        assert!(matches!(cfg.core_stdlib(), CoreStdLib::All));
-    }
-
-    #[test]
-    fn core_stdlib_safe() {
-        let cfg = LuaConfig { stdlib: LuaStdLib::Safe, modules: LuaModules::default() };
-        assert!(matches!(cfg.core_stdlib(), CoreStdLib::Safe));
-    }
-
-    #[test]
-    fn core_stdlib_none() {
-        let cfg = LuaConfig { stdlib: LuaStdLib::None, modules: LuaModules::default() };
-        assert!(matches!(cfg.core_stdlib(), CoreStdLib::None));
+impl From<LunaConfig> for (luna_core::LunaConfig, luna_core::LuaOption) {
+    fn from(c: LunaConfig) -> Self {
+        (
+            luna_core::LunaConfig { sandbox: c.sandbox },
+            luna_core::LuaOption { stdlib: c.stdlib.into(), version: c.version.into() },
+        )
     }
 }

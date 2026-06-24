@@ -53,5 +53,6 @@ tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 paranoid-android = "0.2"
 
 [dev-dependencies]
+luna_core = { path = "luna_core", default-features = false }
 tempfile = "3"
 ureq = { workspace = true }
