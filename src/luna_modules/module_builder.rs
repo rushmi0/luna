@@ -108,7 +108,7 @@ impl ModuleBuilder {
 
 impl Default for ModuleBuilder {
     fn default() -> Self {
-        crate::default_module_builder()
+        super::default_module_builder()
     }
 }
 

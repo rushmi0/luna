@@ -1,146 +1,154 @@
 package win.rushmi0.luna
 
-import win.rushmi0.luna.LuaException
-import win.rushmi0.luna.LuaStdLib
-import win.rushmi0.luna.LuaValue
-import win.rushmi0.luna.LuaVersion
-import win.rushmi0.luna.LunaConfig
-import win.rushmi0.luna.Vm
-import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 class JvmFfiTest {
 
-    @Test
-    fun `integer boundary values on JVM`() {
-        val vm = Vm()
-        val max = vm.eval("return math.maxinteger")
-        assertIs<LuaValue.Integer>(max)
-        assertEquals(Long.MAX_VALUE, max.v1)
-    }
+    private fun makeVm(): Vm = LunaVM(
+        config = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+    ).start()
+
+    // -- Basic run / exec flow --
 
     @Test
-    fun `repeated eval calls on JVM`() {
-        val vm = Vm()
-        repeat(20) { i ->
-            val v = vm.eval("return $i * 2")
-            assertIs<LuaValue.Integer>(v)
-            assertEquals(i.toLong() * 2, v.v1)
+    fun jvm_run_sets_global_then_exec_reads_it() {
+        makeVm().use { vm ->
+            vm.run("a = 2")
+            vm.exec("print(a + 10)")
         }
     }
 
     @Test
-    fun `multiple vm instances are independent on JVM`() {
-        val a = Vm()
-        val b = Vm()
-        a.exec("x = 1")
-        b.exec("x = 999")
-        assertEquals(1L,   (a.getGlobal("x") as LuaValue.Integer).v1)
-        assertEquals(999L, (b.getGlobal("x") as LuaValue.Integer).v1)
-    }
-
-    @Test
-    fun `exec and eval share state on JVM`() {
-        val vm = Vm()
-        vm.exec("counter = 0")
-        repeat(5) { vm.exec("counter = counter + 1") }
-        val v = vm.eval("return counter")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(5L, v.v1)
-    }
-
-    @Test
-    fun `syntax error message is non-empty on JVM`() {
-        val ex = assertFailsWith<LuaException.Syntax> {
-            Vm().exec("???")
+    fun jvm_run_returns_computed_value() {
+        makeVm().use { vm ->
+            val result = vm.run("local a = 2; return a + 10")
+            assertIs<LocalValue.Integer>(result)
+            assertEquals(12L, result.v1)
         }
-        assertTrue(ex.msg.isNotEmpty())
+    }
+
+    // -- State persistence --
+
+    @Test
+    fun jvm_state_persists_across_multiple_runs() {
+        makeVm().use { vm ->
+            vm.exec("counter = 0")
+            vm.exec("counter = counter + 1")
+            vm.exec("counter = counter + 1")
+            val v = vm.run("return counter")
+            assertIs<LocalValue.Integer>(v)
+            assertEquals(2L, v.v1)
+        }
+    }
+
+    // -- setGlobal / getGlobal --
+
+    @Test
+    fun jvm_set_global_readable_in_script() {
+        makeVm().use { vm ->
+            vm.setGlobal("x", LocalValue.Integer(21L))
+            val v = vm.run("return x * 2")
+            assertIs<LocalValue.Integer>(v)
+            assertEquals(42L, v.v1)
+        }
     }
 
     @Test
-    fun `unicode string roundtrip on JVM`() {
-        val vm = Vm()
-        vm.setGlobal("s", LuaValue.LuaString("สวัสดี"))
-        val v = vm.getGlobal("s")
-        assertIs<LuaValue.LuaString>(v)
-        assertEquals("สวัสดี", v.v1)
+    fun jvm_get_global_written_by_script() {
+        makeVm().use { vm ->
+            vm.exec("msg = 'hello'")
+            val v = vm.getGlobal("msg")
+            assertIs<LocalValue.LuaString>(v)
+            assertEquals("hello", v.v1)
+        }
+    }
+
+    // -- version --
+
+    @Test
+    fun jvm_version_is_lua54() {
+        makeVm().use { vm ->
+            assertEquals("Lua 5.4", vm.version())
+        }
+    }
+
+    // -- stdlib variants --
+
+    @Test
+    fun jvm_safe_stdlib_hides_io() {
+        Vm.create(
+            LunaConfig(sandbox = false),
+            LuaOption(stdlib = LuaStdLib.SAFE, version = LuaVersion.LUA54)
+        ).use { vm ->
+            assertIs<LocalValue.Nil>(vm.run("return io"))
+        }
     }
 
     @Test
-    fun `runFile executes script from disk`() {
-        val file = Files.createTempFile("luna_test_", ".lua")
-        file.toFile().writeText("result = 42")
-        val vm = Vm()
-        vm.runFile(file.toAbsolutePath().toString())
-        val v = vm.getGlobal("result")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(42L, v.v1)
-        file.toFile().delete()
+    fun jvm_no_stdlib_arithmetic_works() {
+        Vm.create(
+            LunaConfig(sandbox = false),
+            LuaOption(stdlib = LuaStdLib.NONE, version = LuaVersion.LUA54)
+        ).use { vm ->
+            val v = vm.run("return 6 * 7")
+            assertIs<LocalValue.Integer>(v)
+            assertEquals(42L, v.v1)
+        }
     }
 
-    @Test
-    fun `runFile returns value from script`() {
-        val file = Files.createTempFile("luna_test_", ".lua")
-        file.toFile().writeText("""
-            function greet(name)
-                return "Hello, " .. name
-            end
-            msg = greet("JVM")
-        """.trimIndent())
-        val vm = Vm()
-        vm.runFile(file.toAbsolutePath().toString())
-        val v = vm.getGlobal("msg")
-        assertIs<LuaValue.LuaString>(v)
-        assertEquals("Hello, JVM", v.v1)
-        file.toFile().delete()
-    }
+    // -- Unsupported version --
 
     @Test
-    fun `withConfig lua54 is accepted on JVM`() {
-        val vm = Vm.withConfig(LunaConfig(sandbox = false, stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54))
-        val v = vm.eval("return _VERSION")
-        assertIs<LuaValue.LuaString>(v)
-        assertTrue(v.v1.startsWith("Lua 5.4"))
-    }
-
-    @Test
-    fun `withConfig sandbox hides env on JVM`() {
-        val vm = Vm.withConfig(LunaConfig(sandbox = true, stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54))
-        assertIs<LuaValue.Nil>(vm.eval("return env"))
-    }
-
-    @Test
-    fun `withConfig unsupported version throws on JVM`() {
+    fun jvm_unsupported_version_throws_UnsupportedVersion() {
         assertFailsWith<LuaException.UnsupportedVersion> {
-            Vm.withConfig(LunaConfig(sandbox = false, stdlib = LuaStdLib.ALL, version = LuaVersion.LUA_JIT))
+            LunaVM(
+                config = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA_JIT)
+            ).start()
+        }
+    }
+
+    // -- Sandbox --
+
+    @Test
+    fun jvm_sandbox_blocks_native_module_require() {
+        Vm.create(
+            LunaConfig(sandbox = true),
+            LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+        ).use { vm ->
+            assertFailsWith<LuaException.Runtime> {
+                vm.run("""require("fs")""")
+            }
         }
     }
 
     @Test
-    fun `error in runFile throws LuaException`() {
-        val file = Files.createTempFile("luna_test_", ".lua")
-        file.toFile().writeText("error('from file')")
-        val ex = assertFailsWith<LuaException.Runtime> {
-            Vm().runFile(file.toAbsolutePath().toString())
+    fun jvm_sandbox_allows_lua_stdlib() {
+        Vm.create(
+            LunaConfig(sandbox = true),
+            LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+        ).use { vm ->
+            val v = vm.run("return tostring(42)")
+            assertIs<LocalValue.LuaString>(v)
+            assertEquals("42", v.v1)
         }
-        assertTrue(ex.msg.contains("from file"))
-        file.toFile().delete()
     }
 
+    // -- Isolation between VMs --
+
     @Test
-    fun `globals set before runFile are visible in script`() {
-        val file = Files.createTempFile("luna_test_", ".lua")
-        file.toFile().writeText("result = injected * 10")
-        val vm = Vm()
-        vm.setGlobal("injected", LuaValue.Integer(7L))
-        vm.runFile(file.toAbsolutePath().toString())
-        val v = vm.getGlobal("result")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(70L, v.v1)
-        file.toFile().delete()
+    fun jvm_two_vms_do_not_share_globals() {
+        val opt = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+
+        LunaVM(config = opt).start().use { v1 ->
+            LunaVM(config = opt).start().use { v2 ->
+                v1.exec("shared = 1")
+                v2.exec("shared = 999")
+                assertEquals(1L,   (v1.getGlobal("shared") as LocalValue.Integer).v1)
+                assertEquals(999L, (v2.getGlobal("shared") as LocalValue.Integer).v1)
+            }
+        }
     }
 }

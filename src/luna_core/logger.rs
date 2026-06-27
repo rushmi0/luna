@@ -13,14 +13,13 @@ impl From<LogLevel> for Level {
     fn from(value: LogLevel) -> Self {
         match value {
             LogLevel::Error => Self::ERROR,
-            LogLevel::Warn  => Self::WARN,
-            LogLevel::Info  => Self::INFO,
+            LogLevel::Warn => Self::WARN,
+            LogLevel::Info => Self::INFO,
             LogLevel::Debug => Self::DEBUG,
             LogLevel::Trace => Self::TRACE,
         }
     }
 }
-
 
 #[uniffi::export]
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -30,7 +29,7 @@ pub fn init_logger(level: LogLevel) {
         .with_max_level(level)
         .finish();
     match tracing::subscriber::set_global_default(subscriber) {
-        Ok(_)  => tracing::info!("Luna {} — logger initialized", env!("CARGO_PKG_VERSION")),
+        Ok(_) => tracing::info!("Luna {} — logger initialized", env!("CARGO_PKG_VERSION")),
         Err(e) => eprintln!("Luna: failed to initialize logger: {e}"),
     }
 }
@@ -38,14 +37,16 @@ pub fn init_logger(level: LogLevel) {
 #[uniffi::export]
 #[cfg(any(target_os = "android", target_os = "ios"))]
 pub fn init_logger(level: LogLevel) {
-    use tracing_subscriber::{filter::Targets, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer};
+    use tracing_subscriber::{
+        Layer, filter::Targets, fmt, layer::SubscriberExt, util::SubscriberInitExt,
+    };
 
     let level: Level = level.into();
 
-    // Android → Logcat via paranoid_android; iOS → plain fmt layer without ANSI
     #[cfg(target_os = "android")]
-    let layer = fmt::layer()
-        .with_writer(paranoid_android::AndroidLogMakeWriter::new("luna".to_owned()));
+    let layer = fmt::layer().with_writer(paranoid_android::AndroidLogMakeWriter::new(
+        "luna".to_owned(),
+    ));
 
     #[cfg(not(target_os = "android"))]
     let layer = fmt::layer();
@@ -57,7 +58,7 @@ pub fn init_logger(level: LogLevel) {
         .try_init();
 
     match res {
-        Ok(_)  => tracing::info!("Luna {} — logger initialized", env!("CARGO_PKG_VERSION")),
+        Ok(_) => tracing::info!("Luna {} — logger initialized", env!("CARGO_PKG_VERSION")),
         Err(e) => eprintln!("Luna: failed to initialize logger: {e}"),
     }
 }

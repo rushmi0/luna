@@ -1,12 +1,10 @@
-pub mod config;
-pub mod error;
-pub mod logger;
-pub mod value;
-pub mod vm;
+pub mod luna_core;
+pub mod luna_modules;
 
-pub use config::{LuaStdLib, LuaVersion, LunaConfig};
-pub use error::LuaError;
-pub use value::LuaValue;
-pub use vm::{LunaVM, Vm};
+pub use luna_core::{
+    LuaError, LuaOption, LuaStdLib, LuaVersion, LocalValue, LunaConfig,
+    LogLevel, LunaVM, Vm, init_logger,
+};
+pub use luna_modules::ModuleBuilder;
 
 uniffi::setup_scaffolding!("luna");

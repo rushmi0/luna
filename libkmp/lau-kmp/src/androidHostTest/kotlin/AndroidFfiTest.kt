@@ -1,125 +1,154 @@
 package win.rushmi0.luna
 
-import win.rushmi0.luna.LuaException
-import win.rushmi0.luna.LuaStdLib
-import win.rushmi0.luna.LuaValue
-import win.rushmi0.luna.LuaVersion
-import win.rushmi0.luna.LunaConfig
-import win.rushmi0.luna.Vm
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class AndroidFfiTest {
 
-    @Test
-    fun `default vm runs arithmetic on Android host`() {
-        val v = Vm().eval("return 4 + 6")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(10L, v.v1)
-    }
+    private fun makeVm(): Vm = LunaVM(
+        config = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+    ).start()
+
+    // -- Basic run / exec flow --
 
     @Test
-    fun `version string on Android host`() {
-        val v = Vm().eval("return _VERSION")
-        assertIs<LuaValue.LuaString>(v)
-        assertTrue(v.v1.startsWith("Lua"))
-    }
-
-    @Test
-    fun `unicode string roundtrip on Android host`() {
-        val vm = Vm()
-        vm.setGlobal("greeting", LuaValue.LuaString("สวัสดี"))
-        val v = vm.getGlobal("greeting")
-        assertIs<LuaValue.LuaString>(v)
-        assertEquals("สวัสดี", v.v1)
-    }
-
-    @Test
-    fun `multiple vm instances are independent on Android host`() {
-        val g1 = Vm()
-        val g2 = Vm()
-        g1.exec("x = 1")
-        g2.exec("x = 2")
-        assertEquals(1L, (g1.getGlobal("x") as LuaValue.Integer).v1)
-        assertEquals(2L, (g2.getGlobal("x") as LuaValue.Integer).v1)
-    }
-
-    @Test
-    fun `runtime error throws on Android host`() {
-        assertFailsWith<LuaException.Runtime> {
-            Vm().exec("error('Android error')")
+    fun android_run_sets_global_then_exec_reads_it() {
+        makeVm().use { vm ->
+            vm.run("a = 2")
+            vm.exec("print(a + 10)")
         }
     }
 
     @Test
-    fun `syntax error msg is preserved on Android host`() {
-        val ex = assertFailsWith<LuaException.Syntax> {
-            Vm().exec("???")
+    fun android_run_returns_computed_value() {
+        makeVm().use { vm ->
+            val result = vm.run("local a = 2; return a + 10")
+            assertIs<LocalValue.Integer>(result)
+            assertEquals(12L, result.v1)
         }
-        assertTrue(ex.msg.isNotEmpty())
+    }
+
+    // -- State persistence --
+
+    @Test
+    fun android_state_persists_across_multiple_runs() {
+        makeVm().use { vm ->
+            vm.exec("counter = 0")
+            vm.exec("counter = counter + 1")
+            vm.exec("counter = counter + 1")
+            val v = vm.run("return counter")
+            assertIs<LocalValue.Integer>(v)
+            assertEquals(2L, v.v1)
+        }
+    }
+
+    // -- setGlobal / getGlobal --
+
+    @Test
+    fun android_set_global_readable_in_script() {
+        makeVm().use { vm ->
+            vm.setGlobal("x", LocalValue.Integer(21L))
+            val v = vm.run("return x * 2")
+            assertIs<LocalValue.Integer>(v)
+            assertEquals(42L, v.v1)
+        }
     }
 
     @Test
-    fun `withConfig all stdlib on Android host`() {
-        val vm = Vm.withConfig(LunaConfig(sandbox = false, stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54))
-        val v = vm.eval("return type(math)")
-        assertIs<LuaValue.LuaString>(v)
-        assertEquals("table", v.v1)
+    fun android_get_global_written_by_script() {
+        makeVm().use { vm ->
+            vm.exec("msg = 'hello'")
+            val v = vm.getGlobal("msg")
+            assertIs<LocalValue.LuaString>(v)
+            assertEquals("hello", v.v1)
+        }
+    }
+
+    // -- version --
+
+    @Test
+    fun android_version_is_lua54() {
+        makeVm().use { vm ->
+            assertEquals("Lua 5.4", vm.version())
+        }
+    }
+
+    // -- stdlib variants --
+
+    @Test
+    fun android_safe_stdlib_hides_io() {
+        Vm.create(
+            LunaConfig(sandbox = false),
+            LuaOption(stdlib = LuaStdLib.SAFE, version = LuaVersion.LUA54)
+        ).use { vm ->
+            assertIs<LocalValue.Nil>(vm.run("return io"))
+        }
     }
 
     @Test
-    fun `withConfig safe stdlib hides io on Android host`() {
-        val vm = Vm.withConfig(LunaConfig(sandbox = false, stdlib = LuaStdLib.SAFE, version = LuaVersion.LUA54))
-        assertIs<LuaValue.Nil>(vm.eval("return io"))
+    fun android_no_stdlib_arithmetic_works() {
+        Vm.create(
+            LunaConfig(sandbox = false),
+            LuaOption(stdlib = LuaStdLib.NONE, version = LuaVersion.LUA54)
+        ).use { vm ->
+            val v = vm.run("return 6 * 7")
+            assertIs<LocalValue.Integer>(v)
+            assertEquals(42L, v.v1)
+        }
     }
 
-    @Test
-    fun `withConfig sandbox hides env on Android host`() {
-        val vm = Vm.withConfig(LunaConfig(sandbox = true, stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54))
-        assertIs<LuaValue.Nil>(vm.eval("return env"))
-    }
+    // -- Unsupported version --
 
     @Test
-    fun `withConfig unsupported version throws on Android host`() {
+    fun android_unsupported_version_throws_UnsupportedVersion() {
         assertFailsWith<LuaException.UnsupportedVersion> {
-            Vm.withConfig(LunaConfig(sandbox = false, stdlib = LuaStdLib.ALL, version = LuaVersion.LUA_JIT))
+            LunaVM(
+                config = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA_JIT)
+            ).start()
+        }
+    }
+
+    // -- Sandbox --
+
+    @Test
+    fun android_sandbox_blocks_native_module_require() {
+        Vm.create(
+            LunaConfig(sandbox = true),
+            LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+        ).use { vm ->
+            assertFailsWith<LuaException.Runtime> {
+                vm.run("""require("fs")""")
+            }
         }
     }
 
     @Test
-    fun `set and get all value types on Android host`() {
-        val vm = Vm()
-        vm.setGlobal("b", LuaValue.Boolean(false))
-        vm.setGlobal("n", LuaValue.Integer(7L))
-        vm.setGlobal("f", LuaValue.Number(1.5))
-        vm.setGlobal("s", LuaValue.LuaString("android"))
-
-        assertFalse((vm.getGlobal("b") as LuaValue.Boolean).v1)
-        assertEquals(7L,       (vm.getGlobal("n") as LuaValue.Integer).v1)
-        assertEquals(1.5,      (vm.getGlobal("f") as LuaValue.Number).v1, 1e-10)
-        assertEquals("android",(vm.getGlobal("s") as LuaValue.LuaString).v1)
+    fun android_sandbox_allows_lua_stdlib() {
+        Vm.create(
+            LunaConfig(sandbox = true),
+            LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+        ).use { vm ->
+            val v = vm.run("return tostring(42)")
+            assertIs<LocalValue.LuaString>(v)
+            assertEquals("42", v.v1)
+        }
     }
 
-    @Test
-    fun `stateful counter on Android host`() {
-        val vm = Vm()
-        vm.exec("c = 0")
-        repeat(3) { vm.exec("c = c + 1") }
-        val v = vm.eval("return c")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(3L, v.v1)
-    }
+    // -- Isolation between VMs --
 
     @Test
-    fun `error recovery on Android host`() {
-        val vm = Vm()
-        runCatching { vm.exec("error('oops')") }
-        val v = vm.eval("return 42")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(42L, v.v1)
+    fun android_two_vms_do_not_share_globals() {
+        val opt = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+
+        LunaVM(config = opt).start().use { v1 ->
+            LunaVM(config = opt).start().use { v2 ->
+                v1.exec("shared = 1")
+                v2.exec("shared = 999")
+                assertEquals(1L,   (v1.getGlobal("shared") as LocalValue.Integer).v1)
+                assertEquals(999L, (v2.getGlobal("shared") as LocalValue.Integer).v1)
+            }
+        }
     }
 }

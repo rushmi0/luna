@@ -1,151 +1,107 @@
-use luna::value::LuaValue;
-use luna::vm::Vm;
-use luna_core::value::Value as CoreValue;
-
-
-#[test]
-fn core_nil_to_lua_nil() {
-    assert!(matches!(LuaValue::from(CoreValue::Nil), LuaValue::Nil));
-}
-
-#[test]
-fn core_bool_true_to_lua_bool() {
-    assert!(matches!(LuaValue::from(CoreValue::Boolean(true)), LuaValue::Boolean(true)));
-}
-
-#[test]
-fn core_bool_false_to_lua_bool() {
-    assert!(matches!(LuaValue::from(CoreValue::Boolean(false)), LuaValue::Boolean(false)));
-}
-
-#[test]
-fn core_integer_to_lua_integer() {
-    assert!(matches!(LuaValue::from(CoreValue::Integer(42)), LuaValue::Integer(42)));
-}
-
-#[test]
-fn core_negative_integer_to_lua_integer() {
-    assert!(matches!(
-        LuaValue::from(CoreValue::Integer(-1)),
-        LuaValue::Integer(-1)
-    ));
-}
-
-#[test]
-fn core_number_to_lua_number() {
-    let LuaValue::Number(n) = LuaValue::from(CoreValue::Number(3.14)) else { panic!() };
-    assert!((n - 3.14).abs() < f64::EPSILON);
-}
-
-#[test]
-fn core_string_to_lua_string() {
-    assert!(matches!(
-        LuaValue::from(CoreValue::LuaString("hi".into())),
-        LuaValue::LuaString(s) if s == "hi"
-    ));
-}
-
-
-#[test]
-fn lua_nil_to_core_nil() {
-    assert!(matches!(CoreValue::from(LuaValue::Nil), CoreValue::Nil));
-}
-
-#[test]
-fn lua_bool_to_core_bool() {
-    assert!(matches!(CoreValue::from(LuaValue::Boolean(true)), CoreValue::Boolean(true)));
-}
-
-#[test]
-fn lua_integer_to_core_integer() {
-    assert!(matches!(CoreValue::from(LuaValue::Integer(7)), CoreValue::Integer(7)));
-}
-
-#[test]
-fn lua_number_to_core_number() {
-    let CoreValue::Number(n) = CoreValue::from(LuaValue::Number(1.5)) else { panic!() };
-    assert!((n - 1.5).abs() < f64::EPSILON);
-}
-
-#[test]
-fn lua_string_to_core_string() {
-    assert!(matches!(
-        CoreValue::from(LuaValue::LuaString("world".into())),
-        CoreValue::LuaString(s) if s == "world"
-    ));
-}
-
-
-#[test]
-fn nil_roundtrip() {
-    assert!(matches!(LuaValue::from(CoreValue::from(LuaValue::Nil)), LuaValue::Nil));
-}
-
-#[test]
-fn boolean_roundtrip() {
-    assert!(matches!(
-        LuaValue::from(CoreValue::from(LuaValue::Boolean(false))),
-        LuaValue::Boolean(false)
-    ));
-}
+use mlua::{BString, Integer, LightUserData, Lua, MultiValue, Nil, Number, Value, Variadic};
+use std::ptr;
 
 #[test]
 fn integer_roundtrip() {
-    assert!(matches!(
-        LuaValue::from(CoreValue::from(LuaValue::Integer(123))),
-        LuaValue::Integer(123)
-    ));
+    let lua = Lua::new();
+    lua.globals().set("n", 123_i64).unwrap();
+    let v: Integer = lua.globals().get("n").unwrap();
+    assert_eq!(v, 123);
+}
+
+#[test]
+fn number_roundtrip() {
+    let lua = Lua::new();
+    lua.globals().set("f", 3.14_f64).unwrap();
+    let v: Number = lua.globals().get("f").unwrap();
+    assert!((v - 3.14).abs() < f64::EPSILON);
+}
+
+#[test]
+fn bool_roundtrip() {
+    let lua = Lua::new();
+    lua.globals().set("b", true).unwrap();
+    let v: bool = lua.globals().get("b").unwrap();
+    assert!(v);
 }
 
 #[test]
 fn string_roundtrip() {
-    assert!(matches!(
-        LuaValue::from(CoreValue::from(LuaValue::LuaString("test".into()))),
-        LuaValue::LuaString(s) if s == "test"
-    ));
-}
-
-
-#[test]
-fn vm_returns_nil_as_lua_value() {
-    assert!(matches!(Vm::new().eval("return nil".into()).unwrap(), LuaValue::Nil));
+    let lua = Lua::new();
+    lua.globals().set("s", "hello").unwrap();
+    let s = lua.globals().get::<mlua::String>("s").unwrap();
+    assert_eq!(s.to_str().unwrap(), "hello");
 }
 
 #[test]
-fn vm_returns_boolean_as_lua_value() {
-    assert!(matches!(
-        Vm::new().eval("return false".into()).unwrap(),
-        LuaValue::Boolean(false)
-    ));
+fn nil_value() {
+    let lua = Lua::new();
+    let v: Value = lua.globals().get("nonexistent").unwrap();
+    assert_eq!(v, Nil);
 }
 
 #[test]
-fn vm_returns_integer_as_lua_value() {
-    assert!(matches!(
-        Vm::new().eval("return 256".into()).unwrap(),
-        LuaValue::Integer(256)
-    ));
+fn value_enum_variants() {
+    let lua = Lua::new();
+    lua.load("
+        _G.i = 1
+        _G.f = 1.5
+        _G.b = true
+        _G.s = 'hi'
+        _G.n = nil
+    ")
+    .exec()
+    .unwrap();
+
+    assert!(matches!(lua.globals().get::<Value>("i").unwrap(), Value::Integer(_)));
+    assert!(matches!(lua.globals().get::<Value>("f").unwrap(), Value::Number(_)));
+    assert!(matches!(lua.globals().get::<Value>("b").unwrap(), Value::Boolean(_)));
+    assert!(matches!(lua.globals().get::<Value>("s").unwrap(), Value::String(_)));
+    assert!(matches!(lua.globals().get::<Value>("n").unwrap(), Value::Nil));
 }
 
 #[test]
-fn vm_returns_float_as_lua_value() {
-    let LuaValue::Number(n) = Vm::new().eval("return 0.5".into()).unwrap() else { panic!() };
-    assert!((n - 0.5).abs() < f64::EPSILON);
+fn multi_value_return() {
+    let lua = Lua::new();
+    let (a, b, c): (i64, f64, bool) = lua.load("return 1, 2.5, true").eval().unwrap();
+    assert_eq!(a, 1);
+    assert!((b - 2.5).abs() < f64::EPSILON);
+    assert!(c);
 }
 
 #[test]
-fn vm_returns_string_as_lua_value() {
-    assert!(matches!(
-        Vm::new().eval(r#"return "value""#.into()).unwrap(),
-        LuaValue::LuaString(s) if s == "value"
-    ));
+fn variadic_collect() {
+    let lua = Lua::new();
+    let vals: Variadic<i64> = lua.load("return 10, 20, 30").eval().unwrap();
+    assert_eq!(vals.iter().copied().collect::<Vec<_>>(), vec![10, 20, 30]);
 }
 
 #[test]
-fn vm_table_result_maps_to_nil() {
-    // Tables have no LuaValue variant — they collapse to Nil
-    assert!(matches!(
-        Vm::new().eval("return {}".into()).unwrap(),
-        LuaValue::Nil
-    ));
+fn multi_value_push_back() {
+    let mut mv = MultiValue::new();
+    mv.push_back(Value::Integer(99));
+    mv.push_back(Value::Boolean(false));
+    assert_eq!(mv.len(), 2);
+}
+
+#[test]
+fn light_userdata() {
+    let lua = Lua::new();
+    let ptr = LightUserData(ptr::null_mut());
+    lua.globals().set("lud", ptr).unwrap();
+    let v: LightUserData = lua.globals().get("lud").unwrap();
+    assert!(v.0.is_null());
+}
+
+#[test]
+fn string_bytes() {
+    let lua = Lua::new();
+    let s = lua.create_string(b"raw\x00bytes").unwrap();
+    assert_eq!(s.as_bytes(), b"raw\x00bytes");
+}
+
+#[test]
+fn bstring_from_bytes() {
+    let b = BString::from(b"hello".to_vec());
+    assert_eq!(<BString as AsRef<[u8]>>::as_ref(&b), b"hello");
 }

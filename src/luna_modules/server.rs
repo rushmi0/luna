@@ -76,7 +76,6 @@ pub fn preload(lua: &Lua) -> mlua::Result<Table> {
     Ok(t)
 }
 
-// Accept both Express-style (:param) and axum-style ({param}).
 fn coerce_path(path: &str) -> String {
     path.split('/')
         .map(|seg| {

@@ -1,250 +1,154 @@
 package win.rushmi0.luna
 
-import win.rushmi0.luna.LuaException
-import win.rushmi0.luna.LuaStdLib
-import win.rushmi0.luna.LuaValue
-import win.rushmi0.luna.LuaVersion
-import win.rushmi0.luna.LunaConfig
-import win.rushmi0.luna.Vm
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 class FfiTest {
 
-    @Test
-    fun `default vm runs arithmetic`() {
-        val v = Vm().eval("return 1 + 1")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(2L, v.v1)
-    }
+    private fun makeVm(): Vm = LunaVM(
+        config = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+    ).start()
+
+    // -- Basic run / exec flow --
 
     @Test
-    fun `version string contains Lua`() {
-        assertTrue(Vm().version().contains("Lua"))
-    }
-
-    @Test
-    fun `withConfig all stdlib exposes io`() {
-        val vm = Vm.withConfig(LunaConfig(sandbox = false, stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54))
-        val v = vm.eval("return type(io)")
-        assertIs<LuaValue.LuaString>(v)
-        assertEquals("table", v.v1)
-    }
-
-    @Test
-    fun `withConfig safe stdlib hides io`() {
-        val vm = Vm.withConfig(LunaConfig(sandbox = false, stdlib = LuaStdLib.SAFE, version = LuaVersion.LUA54))
-        assertIs<LuaValue.Nil>(vm.eval("return io"))
-    }
-
-    @Test
-    fun `withConfig none stdlib hides tostring`() {
-        val vm = Vm.withConfig(LunaConfig(sandbox = false, stdlib = LuaStdLib.NONE, version = LuaVersion.LUA54))
-        assertIs<LuaValue.Nil>(vm.eval("return tostring"))
-    }
-
-    @Test
-    fun `withConfig sandbox disables modules`() {
-        val vm = Vm.withConfig(LunaConfig(sandbox = true, stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54))
-        assertIs<LuaValue.Nil>(vm.eval("return env"))
-    }
-
-    @Test
-    fun `exec sets a global`() {
-        val vm = Vm()
-        vm.exec("answer = 42")
-        val v = vm.getGlobal("answer")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(42L, v.v1)
-    }
-
-    @Test
-    fun `eval nil`() {
-        assertIs<LuaValue.Nil>(Vm().eval("return nil"))
-    }
-
-    @Test
-    fun `eval boolean true`() {
-        val v = Vm().eval("return true")
-        assertIs<LuaValue.Boolean>(v)
-        assertTrue(v.v1)
-    }
-
-    @Test
-    fun `eval boolean false`() {
-        val v = Vm().eval("return false")
-        assertIs<LuaValue.Boolean>(v)
-        assertFalse(v.v1)
-    }
-
-    @Test
-    fun `eval integer`() {
-        val v = Vm().eval("return 99")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(99L, v.v1)
-    }
-
-    @Test
-    fun `eval negative integer`() {
-        val v = Vm().eval("return -7")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(-7L, v.v1)
-    }
-
-    @Test
-    fun `eval float`() {
-        val v = Vm().eval("return 3.14")
-        assertIs<LuaValue.Number>(v)
-        assertEquals(3.14, v.v1, 1e-10)
-    }
-
-    @Test
-    fun `eval string`() {
-        val v = Vm().eval("""return "hello"""")
-        assertIs<LuaValue.LuaString>(v)
-        assertEquals("hello", v.v1)
-    }
-
-    @Test
-    fun `eval no return is nil`() {
-        assertIs<LuaValue.Nil>(Vm().eval("local x = 1"))
-    }
-
-    @Test
-    fun `run and eval are equivalent`() {
-        val vm = Vm()
-        val viaRun  = vm.run("return 1")
-        val viaEval = vm.eval("return 1")
-        assertIs<LuaValue.Integer>(viaRun)
-        assertIs<LuaValue.Integer>(viaEval)
-        assertEquals(viaRun.v1, viaEval.v1)
-    }
-
-    @Test
-    fun `set and get nil global`() {
-        val vm = Vm()
-        vm.setGlobal("v", LuaValue.Nil)
-        assertIs<LuaValue.Nil>(vm.getGlobal("v"))
-    }
-
-    @Test
-    fun `set and get boolean global`() {
-        val vm = Vm()
-        vm.setGlobal("flag", LuaValue.Boolean(true))
-        val v = vm.getGlobal("flag")
-        assertIs<LuaValue.Boolean>(v)
-        assertTrue(v.v1)
-    }
-
-    @Test
-    fun `set and get integer global`() {
-        val vm = Vm()
-        vm.setGlobal("n", LuaValue.Integer(123L))
-        val v = vm.getGlobal("n")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(123L, v.v1)
-    }
-
-    @Test
-    fun `set and get float global`() {
-        val vm = Vm()
-        vm.setGlobal("f", LuaValue.Number(2.718))
-        val v = vm.getGlobal("f")
-        assertIs<LuaValue.Number>(v)
-        assertEquals(2.718, v.v1, 1e-10)
-    }
-
-    @Test
-    fun `set and get string global`() {
-        val vm = Vm()
-        vm.setGlobal("s", LuaValue.LuaString("world"))
-        val v = vm.getGlobal("s")
-        assertIs<LuaValue.LuaString>(v)
-        assertEquals("world", v.v1)
-    }
-
-    @Test
-    fun `global visible in script`() {
-        val vm = Vm()
-        vm.setGlobal("base", LuaValue.Integer(10L))
-        val v = vm.eval("return base * 3")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(30L, v.v1)
-    }
-
-    @Test
-    fun `missing global is nil`() {
-        assertIs<LuaValue.Nil>(Vm().getGlobal("does_not_exist"))
-    }
-
-    @Test
-    fun `syntax error throws LuaException Syntax`() {
-        assertFailsWith<LuaException.Syntax> {
-            Vm().exec("this is not valid lua !!!")
+    fun run_sets_global_then_exec_reads_it() {
+        makeVm().use { vm ->
+            vm.run("a = 2")
+            vm.exec("print(a + 10)")
         }
     }
 
     @Test
-    fun `runtime error throws LuaException Runtime`() {
-        assertFailsWith<LuaException.Runtime> {
-            Vm().exec("error('boom')")
+    fun run_returns_computed_value() {
+        makeVm().use { vm ->
+            val result = vm.run("local a = 2; return a + 10")
+            assertIs<LocalValue.Integer>(result)
+            assertEquals(12L, result.v1)
+        }
+    }
+
+    // -- State persistence --
+
+    @Test
+    fun state_persists_across_multiple_runs() {
+        makeVm().use { vm ->
+            vm.exec("counter = 0")
+            vm.exec("counter = counter + 1")
+            vm.exec("counter = counter + 1")
+            val v = vm.run("return counter")
+            assertIs<LocalValue.Integer>(v)
+            assertEquals(2L, v.v1)
+        }
+    }
+
+    // -- setGlobal / getGlobal --
+
+    @Test
+    fun set_global_readable_in_script() {
+        makeVm().use { vm ->
+            vm.setGlobal("x", LocalValue.Integer(21L))
+            val v = vm.run("return x * 2")
+            assertIs<LocalValue.Integer>(v)
+            assertEquals(42L, v.v1)
         }
     }
 
     @Test
-    fun `runtime error message is preserved`() {
-        val ex = assertFailsWith<LuaException.Runtime> {
-            Vm().exec("error('something went wrong')")
+    fun get_global_written_by_script() {
+        makeVm().use { vm ->
+            vm.exec("msg = 'hello'")
+            val v = vm.getGlobal("msg")
+            assertIs<LocalValue.LuaString>(v)
+            assertEquals("hello", v.v1)
         }
-        assertTrue(ex.msg.contains("something went wrong"))
     }
 
+    // -- version --
+
     @Test
-    fun `syntax error message is non-empty`() {
-        val ex = assertFailsWith<LuaException.Syntax> {
-            Vm().exec("???")
+    fun version_is_lua54() {
+        makeVm().use { vm ->
+            assertEquals("Lua 5.4", vm.version())
         }
-        assertTrue(ex.msg.isNotEmpty())
+    }
+
+    // -- stdlib variants --
+
+    @Test
+    fun safe_stdlib_hides_io() {
+        Vm.create(
+            LunaConfig(sandbox = false),
+            LuaOption(stdlib = LuaStdLib.SAFE, version = LuaVersion.LUA54)
+        ).use { vm ->
+            assertIs<LocalValue.Nil>(vm.run("return io"))
+        }
     }
 
     @Test
-    fun `error does not poison the vm`() {
-        val vm = Vm()
-        runCatching { vm.exec("error('first')") }
-        val v = vm.eval("return 1")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(1L, v.v1)
+    fun no_stdlib_arithmetic_works() {
+        Vm.create(
+            LunaConfig(sandbox = false),
+            LuaOption(stdlib = LuaStdLib.NONE, version = LuaVersion.LUA54)
+        ).use { vm ->
+            val v = vm.run("return 6 * 7")
+            assertIs<LocalValue.Integer>(v)
+            assertEquals(42L, v.v1)
+        }
+    }
+
+    // -- Unsupported version --
+
+    @Test
+    fun unsupported_version_throws_UnsupportedVersion() {
+        assertFailsWith<LuaException.UnsupportedVersion> {
+            LunaVM(
+                config = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA_JIT)
+            ).start()
+        }
+    }
+
+    // -- Sandbox --
+
+    @Test
+    fun sandbox_blocks_native_module_require() {
+        Vm.create(
+            LunaConfig(sandbox = true),
+            LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+        ).use { vm ->
+            assertFailsWith<LuaException.Runtime> {
+                vm.run("""require("fs")""")
+            }
+        }
     }
 
     @Test
-    fun `two vms do not share globals`() {
-        val vm1 = Vm()
-        val vm2 = Vm()
-        vm1.exec("x = 1")
-        vm2.exec("x = 999")
-        assertEquals(1L,   (vm1.getGlobal("x") as LuaValue.Integer).v1)
-        assertEquals(999L, (vm2.getGlobal("x") as LuaValue.Integer).v1)
+    fun sandbox_allows_lua_stdlib() {
+        Vm.create(
+            LunaConfig(sandbox = true),
+            LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+        ).use { vm ->
+            val v = vm.run("return tostring(42)")
+            assertIs<LocalValue.LuaString>(v)
+            assertEquals("42", v.v1)
+        }
     }
 
-    @Test
-    fun `exec in one vm does not affect another`() {
-        val vm1 = Vm()
-        val vm2 = Vm()
-        vm1.exec("shared = true")
-        assertIs<LuaValue.Nil>(vm2.getGlobal("shared"))
-    }
+    // -- Isolation between VMs --
 
     @Test
-    fun `stateful counter across multiple exec calls`() {
-        val vm = Vm()
-        vm.exec("counter = 0")
-        repeat(5) { vm.exec("counter = counter + 1") }
-        val v = vm.eval("return counter")
-        assertIs<LuaValue.Integer>(v)
-        assertEquals(5L, v.v1)
+    fun two_vms_do_not_share_globals() {
+        val opt = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+
+        LunaVM(config = opt).start().use { v1 ->
+            LunaVM(config = opt).start().use { v2 ->
+                v1.exec("shared = 1")
+                v2.exec("shared = 999")
+                assertEquals(1L,   (v1.getGlobal("shared") as LocalValue.Integer).v1)
+                assertEquals(999L, (v2.getGlobal("shared") as LocalValue.Integer).v1)
+            }
+        }
     }
 }

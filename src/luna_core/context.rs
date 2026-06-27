@@ -20,3 +20,4 @@ impl LuaContext {
         f(&self.lua)
     }
 }
+

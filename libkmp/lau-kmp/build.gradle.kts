@@ -47,7 +47,7 @@ kotlin {
             "iosX64" -> "ios-simulator-x64"
             else -> error("Unsupported iOS target: ${target.targetName}")
         }
-        target.compilations["main"].cinterops.create("klua") {
+        target.compilations["main"].cinterops.create("luna") {
             defFile(project.file("src/nativeInterop/cinterop/luna.def"))
             includeDirs(
                 project.file("src/nativeInterop/cinterop/headers/luna"),

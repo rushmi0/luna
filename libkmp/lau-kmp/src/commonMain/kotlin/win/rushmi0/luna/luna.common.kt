@@ -106,22 +106,16 @@ public object NoPointer
 public interface VmInterface {
     
     @Throws(LuaException::class)
-    public fun `eval`(`script`: kotlin.String): LuaValue
+    public fun `getGlobal`(`name`: kotlin.String): LocalValue
     
     @Throws(LuaException::class)
-    public fun `exec`(`script`: kotlin.String)
-    
-    @Throws(LuaException::class)
-    public fun `getGlobal`(`name`: kotlin.String): LuaValue
-    
-    @Throws(LuaException::class)
-    public fun `run`(`source`: kotlin.String): LuaValue
+    public fun `run`(`source`: kotlin.String): LocalValue
     
     @Throws(LuaException::class)
     public fun `runFile`(`path`: kotlin.String)
     
     @Throws(LuaException::class)
-    public fun `setGlobal`(`name`: kotlin.String, `value`: LuaValue)
+    public fun `setGlobal`(`name`: kotlin.String, `value`: LocalValue)
     
     public fun `version`(): kotlin.String
     
@@ -135,32 +129,26 @@ public expect open class Vm: Disposable, VmInterface {
      * attempt to actually use an object constructed this way will fail as there is no
      * connected Rust object.
      */
+    @Suppress("ConvertSecondaryConstructorToPrimary")
     public constructor(noPointer: NoPointer)
 
     
-    public constructor()
 
     override fun destroy()
     override fun close()
 
     
     @Throws(LuaException::class)
-    public override fun `eval`(`script`: kotlin.String): LuaValue
+    public override fun `getGlobal`(`name`: kotlin.String): LocalValue
     
     @Throws(LuaException::class)
-    public override fun `exec`(`script`: kotlin.String)
-    
-    @Throws(LuaException::class)
-    public override fun `getGlobal`(`name`: kotlin.String): LuaValue
-    
-    @Throws(LuaException::class)
-    public override fun `run`(`source`: kotlin.String): LuaValue
+    public override fun `run`(`source`: kotlin.String): LocalValue
     
     @Throws(LuaException::class)
     public override fun `runFile`(`path`: kotlin.String)
     
     @Throws(LuaException::class)
-    public override fun `setGlobal`(`name`: kotlin.String, `value`: LuaValue)
+    public override fun `setGlobal`(`name`: kotlin.String, `value`: LocalValue)
     
     public override fun `version`(): kotlin.String
     
@@ -168,7 +156,7 @@ public expect open class Vm: Disposable, VmInterface {
     public companion object {
         
         @Throws(LuaException::class)
-        public fun `withConfig`(`config`: LunaConfig): Vm
+        public fun `create`(`config`: LunaConfig, `option`: LuaOption): Vm
         
     }
     
@@ -178,13 +166,55 @@ public expect open class Vm: Disposable, VmInterface {
 
 
 
-public data class LunaConfig (
-    var `sandbox`: kotlin.Boolean, 
+public data class LuaOption (
     var `stdlib`: LuaStdLib, 
     var `version`: LuaVersion
 ) {
     public companion object
 }
+
+
+
+
+public data class LunaConfig (
+    var `sandbox`: kotlin.Boolean
+) {
+    public companion object
+}
+
+
+
+
+
+public sealed class LocalValue {
+    
+    
+    public data object Nil : LocalValue() 
+    
+    
+    public data class Boolean(
+        val v1: kotlin.Boolean,
+    ) : LocalValue() {
+    }
+    
+    public data class Integer(
+        val v1: kotlin.Long,
+    ) : LocalValue() {
+    }
+    
+    public data class Number(
+        val v1: kotlin.Double,
+    ) : LocalValue() {
+    }
+    
+    public data class LuaString(
+        val v1: kotlin.String,
+    ) : LocalValue() {
+    }
+    
+}
+
+
 
 
 
@@ -250,40 +280,6 @@ public enum class LuaStdLib {
     SAFE,
     NONE;
     public companion object
-}
-
-
-
-
-
-
-
-public sealed class LuaValue {
-    
-    
-    public data object Nil : LuaValue() 
-    
-    
-    public data class Boolean(
-        val v1: kotlin.Boolean,
-    ) : LuaValue() {
-    }
-    
-    public data class Integer(
-        val v1: kotlin.Long,
-    ) : LuaValue() {
-    }
-    
-    public data class Number(
-        val v1: kotlin.Double,
-    ) : LuaValue() {
-    }
-    
-    public data class LuaString(
-        val v1: kotlin.String,
-    ) : LuaValue() {
-    }
-    
 }
 
 
