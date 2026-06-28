@@ -3,7 +3,7 @@ use mlua::Lua;
 mod via_luna_vm {
     use luna::{LocalValue, LuaOption, LuaStdLib, LuaVersion, LunaVM};
 
-    fn vm_all() -> luna::Vm {
+    fn vm_all() -> std::sync::Arc<luna::Vm> {
         LunaVM {
             config: LuaOption { stdlib: LuaStdLib::All, version: LuaVersion::Lua54 },
         }

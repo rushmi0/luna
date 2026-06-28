@@ -1,0 +1,48 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: ios-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ios-cargo-registry-
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ios-target-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
+          restore-keys: ios-target-
+
+      - name: Build iOS
+        run: just build-ios
+
+      - name: Upload static libs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-libs
+          path: |
+            target/aarch64-apple-ios/release/libluna.a
+            target/aarch64-apple-ios-sim/release/libluna.a
+            target/x86_64-apple-ios/release/libluna.a
+          if-no-files-found: error

@@ -978,6 +978,12 @@ internal interface UniffiForeignFutureCompleteVoid: com.sun.jna.Callback {
 
 
 
+
+
+
+
+
+
 @Synchronized
 private fun findLibraryName(componentName: String): String {
     val libOverride = System.getProperty("uniffi.component.$componentName.libraryOverride")
@@ -1010,6 +1016,10 @@ internal interface IntegrityCheckingUniffiLib : Library {
     // Integrity check functions only
     fun uniffi_luna_checksum_func_init_logger(
     ): Short
+    fun uniffi_luna_checksum_method_lunavm_start(
+    ): Short
+    fun uniffi_luna_checksum_method_vm_exec(
+    ): Short
     fun uniffi_luna_checksum_method_vm_get_global(
     ): Short
     fun uniffi_luna_checksum_method_vm_run(
@@ -1020,7 +1030,7 @@ internal interface IntegrityCheckingUniffiLib : Library {
     ): Short
     fun uniffi_luna_checksum_method_vm_version(
     ): Short
-    fun uniffi_luna_checksum_constructor_vm_create(
+    fun uniffi_luna_checksum_constructor_lunavm_new(
     ): Short
     fun ffi_luna_uniffi_contract_version(
     ): Int
@@ -1072,6 +1082,22 @@ internal interface UniffiLib : Library {
         }
     }
 
+    fun uniffi_luna_fn_clone_lunavm(
+        `ptr`: Pointer?,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Pointer?
+    fun uniffi_luna_fn_free_lunavm(
+        `ptr`: Pointer?,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Unit
+    fun uniffi_luna_fn_constructor_lunavm_new(
+        `config`: RustBufferByValue,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Pointer?
+    fun uniffi_luna_fn_method_lunavm_start(
+        `ptr`: Pointer?,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Pointer?
     fun uniffi_luna_fn_clone_vm(
         `ptr`: Pointer?,
         uniffiCallStatus: UniffiRustCallStatus,
@@ -1080,11 +1106,11 @@ internal interface UniffiLib : Library {
         `ptr`: Pointer?,
         uniffiCallStatus: UniffiRustCallStatus,
     ): Unit
-    fun uniffi_luna_fn_constructor_vm_create(
-        `config`: RustBufferByValue,
-        `option`: RustBufferByValue,
+    fun uniffi_luna_fn_method_vm_exec(
+        `ptr`: Pointer?,
+        `source`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
-    ): Pointer?
+    ): Byte
     fun uniffi_luna_fn_method_vm_get_global(
         `ptr`: Pointer?,
         `name`: RustBufferByValue,
@@ -1344,6 +1370,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_luna_checksum_func_init_logger() != 39137.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_luna_checksum_method_lunavm_start() != 5362.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_luna_checksum_method_vm_exec() != 55379.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_luna_checksum_method_vm_get_global() != 15029.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1359,7 +1391,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_luna_checksum_method_vm_version() != 54979.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_luna_checksum_constructor_vm_create() != 15704.toShort()) {
+    if (lib.uniffi_luna_checksum_constructor_lunavm_new() != 15381.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1520,6 +1552,155 @@ public object FfiConverterString: FfiConverter<String, RustBufferByValue> {
 
 
 
+public actual open class LunaVm: Disposable, LunaVmInterface {
+
+    public constructor(pointer: Pointer) {
+        this.pointer = pointer
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiPointerDestroyer(pointer))
+    }
+
+    /**
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    public actual constructor(noPointer: NoPointer) {
+        this.pointer = null
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiPointerDestroyer(null))
+    }
+    public actual constructor(`config`: LuaOption) : this(
+        uniffiRustCall { uniffiRustCallStatus ->
+            UniffiLib.INSTANCE.uniffi_luna_fn_constructor_lunavm_new(
+                FfiConverterTypeLuaOption.lower(`config`),
+                uniffiRustCallStatus,
+            )
+        }!!
+    )
+
+    protected val pointer: Pointer?
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed: kotlinx.atomicfu.AtomicBoolean = kotlinx.atomicfu.atomic(false)
+    private val callCounter: kotlinx.atomicfu.AtomicLong = kotlinx.atomicfu.atomic(1L)
+
+    private val lock = kotlinx.atomicfu.locks.ReentrantLock()
+
+    private fun <T> synchronized(block: () -> T): T {
+        lock.lock()
+        try {
+            return block()
+        } finally {
+            lock.unlock()
+        }
+    }
+
+    actual override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    actual override fun close() {
+        synchronized { this.destroy() }
+    }
+
+    internal inline fun <R> callWithPointer(block: (ptr: Pointer) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.value
+            if (c == 0L) {
+                throw IllegalStateException("${this::class::simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this::class::simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the pointer being freed concurrently.
+        try {
+            return block(this.uniffiClonePointer())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiPointerDestroyer(private val pointer: Pointer?) : Disposable {
+        override fun destroy() {
+            pointer?.let { ptr ->
+                uniffiRustCall { status ->
+                    UniffiLib.INSTANCE.uniffi_luna_fn_free_lunavm(ptr, status)
+                }
+            }
+        }
+    }
+
+    public fun uniffiClonePointer(): Pointer {
+        return uniffiRustCall { status ->
+            UniffiLib.INSTANCE.uniffi_luna_fn_clone_lunavm(pointer!!, status)
+        }!!
+    }
+
+    
+    @Throws(LuaException::class)
+    public actual override fun `start`(): Vm {
+        return FfiConverterTypeVm.lift(callWithPointer {
+            uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_lunavm_start(
+                    it,
+                    uniffiRustCallStatus,
+                )
+            }!!
+        })
+    }
+
+
+    
+    
+    public actual companion object
+    
+}
+
+
+
+
+
+public object FfiConverterTypeLunaVM: FfiConverter<LunaVm, Pointer> {
+
+    override fun lower(value: LunaVm): Pointer {
+        return value.uniffiClonePointer()
+    }
+
+    override fun lift(value: Pointer): LunaVm {
+        return LunaVm(value)
+    }
+
+    override fun read(buf: ByteBuffer): LunaVm {
+        // The Rust code always writes pointers as 8 bytes, and will
+        // fail to compile if they don't fit.
+        return lift(buf.getLong().toPointer())
+    }
+
+    override fun allocationSize(value: LunaVm): ULong = 8UL
+
+    override fun write(value: LunaVm, buf: ByteBuffer) {
+        // The Rust code always expects pointers written as 8 bytes,
+        // and will fail to compile if they don't fit.
+        buf.putLong(lower(value).toLong())
+    }
+}
+
+
+
 public actual open class Vm: Disposable, VmInterface {
 
     public constructor(pointer: Pointer) {
@@ -1612,6 +1793,19 @@ public actual open class Vm: Disposable, VmInterface {
 
     
     @Throws(LuaException::class)
+    public actual override fun `exec`(`source`: kotlin.String): kotlin.Boolean {
+        return FfiConverterBoolean.lift(callWithPointer {
+            uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_exec(
+                    it,
+                    FfiConverterString.lower(`source`),
+                    uniffiRustCallStatus,
+                )
+            }
+        })
+    }
+
+    @Throws(LuaException::class)
     public actual override fun `getGlobal`(`name`: kotlin.String): LocalValue {
         return FfiConverterTypeLocalValue.lift(callWithPointer {
             uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
@@ -1677,21 +1871,8 @@ public actual open class Vm: Disposable, VmInterface {
 
 
     
-    public actual companion object {
-        
-        @Throws(LuaException::class)
-        public actual fun `create`(`config`: LunaConfig, `option`: LuaOption): Vm {
-            return FfiConverterTypeVm.lift(uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
-                UniffiLib.INSTANCE.uniffi_luna_fn_constructor_vm_create(
-                    FfiConverterTypeLunaConfig.lower(`config`),
-                    FfiConverterTypeLuaOption.lower(`option`),
-                    uniffiRustCallStatus,
-                )
-            }!!)
-        }
-
-        
-    }
+    
+    public actual companion object
     
 }
 

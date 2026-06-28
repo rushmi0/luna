@@ -1,20 +1,29 @@
-use tokio::sync::Mutex;
+use std::sync::Arc;
 
 use mlua::Value as MluaValue;
+use tokio::sync::Mutex;
 use tokio::task::LocalSet;
 
-use super::{LuaContext, LuaError, LuaOption, LocalValue, LunaConfig, Runtime};
+use super::{LocalValue, LuaContext, LuaError, LuaOption, Runtime};
 
-/// Builder for the Rust API. Construct with struct literal syntax then call `.start()`.
+#[derive(uniffi::Object)]
 pub struct LunaVM {
     pub config: LuaOption,
 }
 
+#[uniffi::export]
 impl LunaVM {
-    pub fn start(self) -> Result<Vm, LuaError> {
-        let rt = Runtime::new(self.config, false)?;
+    #[uniffi::constructor]
+    pub fn new(config: LuaOption) -> Arc<Self> {
+        Arc::new(Self { config })
+    }
+
+    pub fn start(&self) -> Result<Arc<Vm>, LuaError> {
+        let rt = Runtime::new(self.config.clone(), false)?;
         let ctx = rt.create_context()?;
-        Ok(Vm { ctx: Mutex::new(ctx) })
+        Ok(Arc::new(Vm {
+            ctx: Mutex::new(ctx),
+        }))
     }
 }
 
@@ -25,14 +34,6 @@ pub struct Vm {
 
 #[uniffi::export]
 impl Vm {
-
-    #[uniffi::constructor]
-    pub fn create(config: LunaConfig, option: LuaOption) -> Result<Self, LuaError> {
-        let rt = Runtime::new(option, config.sandbox)?;
-        let ctx = rt.create_context()?;
-        Ok(Self { ctx: Mutex::new(ctx) })
-    }
-
     pub fn run(&self, source: String) -> Result<LocalValue, LuaError> {
         let ctx = self.ctx.blocking_lock();
         let v: MluaValue = ctx
@@ -46,14 +47,25 @@ impl Vm {
         Ok(LocalValue::from(v))
     }
 
-    pub fn run_file(&self, path: String) -> Result<(), LuaError> {
-        let source =
-            std::fs::read(&path).map_err(|e| LuaError::Other { msg: e.to_string() })?;
+    pub fn exec(&self, source: &str) -> Result<bool, LuaError> {
         let ctx = self.ctx.blocking_lock();
         ctx.runtime()
             .block_on(async {
                 LocalSet::new()
-                    .run_until(ctx.lua().load(source.as_slice()).exec_async())
+                    .run_until(ctx.lua().load(source).exec_async())
+                    .await
+            })
+            .map_err(LuaError::from)?;
+        Ok(true)
+    }
+
+    pub fn run_file(&self, path: String) -> Result<(), LuaError> {
+        let bytes = std::fs::read(&path).map_err(|e| LuaError::Other { msg: e.to_string() })?;
+        let ctx = self.ctx.blocking_lock();
+        ctx.runtime()
+            .block_on(async {
+                LocalSet::new()
+                    .run_until(ctx.lua().load(bytes.as_slice()).exec_async())
                     .await
             })
             .map_err(LuaError::from)
@@ -79,31 +91,17 @@ impl Vm {
     }
 
     pub fn version(&self) -> String {
-        self.ctx
-            .blocking_lock()
-            .lua()
-            .globals()
-            .get::<String>("_VERSION")
-            .unwrap_or_else(|_| "unknown".to_string())
+        self.with_ctx(|ctx| Ok(ctx.lua().globals().get::<String>("_VERSION")?))
+            .unwrap_or_else(|_| "unknown".into())
     }
 }
 
 impl Vm {
-    pub fn exec(&self, script: String) -> Result<(), LuaError> {
+    fn with_ctx<R>(
+        &self,
+        f: impl FnOnce(&LuaContext) -> Result<R, LuaError>,
+    ) -> Result<R, LuaError> {
         let ctx = self.ctx.blocking_lock();
-        ctx.runtime()
-            .block_on(async {
-                LocalSet::new()
-                    .run_until(ctx.lua().load(script.as_str()).exec_async())
-                    .await
-            })
-            .map_err(LuaError::from)
-    }
-
-    pub fn run_with<F>(&self, f: F) -> Result<(), LuaError>
-    where
-        F: FnOnce(&mlua::Lua) -> mlua::Result<()>,
-    {
-        f(self.ctx.blocking_lock().lua()).map_err(LuaError::from)
+        f(&ctx)
     }
 }

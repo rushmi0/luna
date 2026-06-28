@@ -14,7 +14,14 @@ mod tests {
         .start()
         .expect("VM must start");
         vm.run("a = 2".to_string()).unwrap();
-        vm.exec("print(a + 10)".to_string()).unwrap();
+        vm.run(r#"
+            local info = debug.getinfo(1)
+
+            print(info.currentline)
+            print(info.what)
+
+        "#.to_string()).unwrap();
+        vm.exec(&*"print(a + 10)".to_string()).unwrap();
     }
 
     #[test]
@@ -43,8 +50,8 @@ mod tests {
         .start()
         .expect("VM must start");
         vm.run("counter = 0".to_string()).unwrap();
-        vm.exec("counter = counter + 1".to_string()).unwrap();
-        vm.exec("counter = counter + 1".to_string()).unwrap();
+        vm.exec("counter = counter + 1").unwrap();
+        vm.exec("counter = counter + 1").unwrap();
         let v = vm.run("return counter".to_string()).unwrap();
         assert_eq!(v, LocalValue::Integer(2));
     }
@@ -76,7 +83,7 @@ mod tests {
         }
         .start()
         .expect("VM must start");
-        vm.exec("msg = 'hello'".to_string()).unwrap();
+        vm.exec("msg = 'hello'").unwrap();
         let v = vm.get_global("msg".to_string()).unwrap();
         assert_eq!(v, LocalValue::LuaString("hello".to_string()));
     }
@@ -144,56 +151,5 @@ mod tests {
         ));
     }
 
-    // run_with gives direct Lua access
-    #[test]
-    fn run_with_injects_rust_value() {
-        let vm = LunaVM {
-            config: LuaOption {
-                stdlib: LuaStdLib::All,
-                version: LuaVersion::Lua54,
-            },
-        }
-        .start()
-        .expect("VM must start");
-        vm.run_with(|lua| lua.globals().set("injected", 99_i64))
-            .unwrap();
-        assert_eq!(
-            vm.run("return injected".to_string()).unwrap(),
-            LocalValue::Integer(99)
-        );
-    }
 
-    #[test]
-    fn run_with_executes_script_and_reads_result() {
-        let vm = LunaVM {
-            config: LuaOption {
-                stdlib: LuaStdLib::All,
-                version: LuaVersion::Lua54,
-            },
-        }
-        .start()
-        .expect("VM must start");
-        vm.run_with(|lua| {
-            lua.load("result = 6 * 7").exec()?;
-            let n: i64 = lua.globals().get("result")?;
-            assert_eq!(n, 42);
-            Ok(())
-        })
-        .unwrap();
-    }
-
-    #[test]
-    fn run_with_script_state_visible_to_run() {
-        let vm = LunaVM {
-            config: LuaOption {
-                stdlib: LuaStdLib::All,
-                version: LuaVersion::Lua54,
-            },
-        }
-        .start()
-        .expect("VM must start");
-        vm.run_with(|lua| lua.load("base = 100").exec()).unwrap();
-        let v = vm.run("return base + 1".to_string()).unwrap();
-        assert_eq!(v, LocalValue::Integer(101));
-    }
 }

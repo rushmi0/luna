@@ -1,46 +1,31 @@
 #[cfg(test)]
 mod tests {
-    use luna::{LocalValue, LuaError, LuaOption, LuaStdLib, LuaVersion, LunaConfig, Vm};
+    use luna::{LocalValue, LuaError, LuaOption, LuaStdLib, LuaVersion, LunaVM};
     use std::io::Write;
+    use std::sync::Arc;
     use tempfile::NamedTempFile;
 
-    fn vm(stdlib: LuaStdLib) -> Vm {
-        Vm::create(
-            LunaConfig { sandbox: false },
-            LuaOption {
-                stdlib,
-                version: LuaVersion::Lua54,
-            },
-        )
+    fn vm(stdlib: LuaStdLib) -> Arc<luna::Vm> {
+        LunaVM {
+            config: LuaOption { stdlib, version: LuaVersion::Lua54 },
+        }
+        .start()
         .unwrap()
     }
 
-    fn vm_all() -> Vm {
+    fn vm_all() -> Arc<luna::Vm> {
         vm(LuaStdLib::All)
     }
 
-    #[test]
-    fn create_constructor_starts_vm() {
-        let _ = Vm::create(
-            LunaConfig { sandbox: false },
-            LuaOption {
-                stdlib: LuaStdLib::All,
-                version: LuaVersion::Lua54,
-            },
-        )
-        .expect("VM must start");
-    }
+    // -- start() --
 
     #[test]
-    fn sandbox_mode_starts() {
-        let _ = Vm::create(
-            LunaConfig { sandbox: true },
-            LuaOption {
-                stdlib: LuaStdLib::All,
-                version: LuaVersion::Lua54,
-            },
-        )
-        .unwrap();
+    fn start_returns_vm() {
+        let _ = LunaVM {
+            config: LuaOption { stdlib: LuaStdLib::All, version: LuaVersion::Lua54 },
+        }
+        .start()
+        .expect("VM must start");
     }
 
     #[test]
@@ -52,6 +37,8 @@ mod tests {
     fn no_stdlib_starts() {
         let _ = vm(LuaStdLib::None);
     }
+
+    // -- run() --
 
     #[test]
     fn run_returns_integer() {
@@ -110,7 +97,7 @@ mod tests {
     }
 
     #[test]
-    fn global_set_in_one_run_visible_in_next() {
+    fn run_state_persists_across_calls() {
         let vm = vm_all();
         vm.run("answer = 42".to_string()).unwrap();
         assert_eq!(
@@ -120,7 +107,7 @@ mod tests {
     }
 
     #[test]
-    fn state_accumulates_across_multiple_runs() {
+    fn run_state_accumulates_across_multiple_calls() {
         let vm = vm_all();
         vm.run("total = 0".to_string()).unwrap();
         vm.run("total = total + 10".to_string()).unwrap();
@@ -170,6 +157,49 @@ mod tests {
         );
     }
 
+    // -- exec() --
+
+    #[test]
+    fn exec_returns_true_on_success() {
+        assert!(vm_all().exec("local x = 1").unwrap());
+    }
+
+    #[test]
+    fn exec_state_visible_to_run() {
+        let vm = vm_all();
+        vm.exec("a = 2").unwrap();
+        assert_eq!(
+            vm.run("return a + 10".to_string()).unwrap(),
+            LocalValue::Integer(12)
+        );
+    }
+
+    #[test]
+    fn exec_state_persists_across_calls() {
+        let vm = vm_all();
+        vm.exec("counter = 0").unwrap();
+        vm.exec("counter = counter + 1").unwrap();
+        vm.exec("counter = counter + 1").unwrap();
+        assert_eq!(
+            vm.run("return counter".to_string()).unwrap(),
+            LocalValue::Integer(2)
+        );
+    }
+
+    #[test]
+    fn exec_syntax_error_returns_err() {
+        let err = vm_all().exec("local @@").unwrap_err();
+        assert!(matches!(err, LuaError::Syntax { .. }), "got: {err:?}");
+    }
+
+    #[test]
+    fn exec_runtime_error_returns_err() {
+        let err = vm_all().exec("error('boom')").unwrap_err();
+        assert!(matches!(err, LuaError::Runtime { .. }), "got: {err:?}");
+    }
+
+    // -- run_file() --
+
     #[test]
     fn run_file_executes_script_and_sets_global() {
         let vm = vm_all();
@@ -190,22 +220,19 @@ mod tests {
         assert!(matches!(err, LuaError::Other { .. }), "got: {err:?}");
     }
 
+    // -- set_global() / get_global() --
+
     #[test]
     fn set_get_integer_global() {
         let vm = vm_all();
-        vm.set_global("x".to_string(), LocalValue::Integer(42))
-            .unwrap();
-        assert_eq!(
-            vm.get_global("x".to_string()).unwrap(),
-            LocalValue::Integer(42)
-        );
+        vm.set_global("x".to_string(), LocalValue::Integer(42)).unwrap();
+        assert_eq!(vm.get_global("x".to_string()).unwrap(), LocalValue::Integer(42));
     }
 
     #[test]
     fn set_get_float_global() {
         let vm = vm_all();
-        vm.set_global("pi".to_string(), LocalValue::Number(3.14))
-            .unwrap();
+        vm.set_global("pi".to_string(), LocalValue::Number(3.14)).unwrap();
         let LocalValue::Number(n) = vm.get_global("pi".to_string()).unwrap() else {
             panic!("expected LocalValue::Number");
         };
@@ -215,11 +242,7 @@ mod tests {
     #[test]
     fn set_get_string_global() {
         let vm = vm_all();
-        vm.set_global(
-            "name".to_string(),
-            LocalValue::LuaString("luna".to_string()),
-        )
-        .unwrap();
+        vm.set_global("name".to_string(), LocalValue::LuaString("luna".to_string())).unwrap();
         assert_eq!(
             vm.get_global("name".to_string()).unwrap(),
             LocalValue::LuaString("luna".to_string()),
@@ -229,19 +252,14 @@ mod tests {
     #[test]
     fn set_get_boolean_global() {
         let vm = vm_all();
-        vm.set_global("flag".to_string(), LocalValue::Boolean(true))
-            .unwrap();
-        assert_eq!(
-            vm.get_global("flag".to_string()).unwrap(),
-            LocalValue::Boolean(true)
-        );
+        vm.set_global("flag".to_string(), LocalValue::Boolean(true)).unwrap();
+        assert_eq!(vm.get_global("flag".to_string()).unwrap(), LocalValue::Boolean(true));
     }
 
     #[test]
     fn set_nil_clears_existing_global() {
         let vm = vm_all();
-        vm.set_global("val".to_string(), LocalValue::Integer(99))
-            .unwrap();
+        vm.set_global("val".to_string(), LocalValue::Integer(99)).unwrap();
         vm.set_global("val".to_string(), LocalValue::Nil).unwrap();
         assert_eq!(vm.get_global("val".to_string()).unwrap(), LocalValue::Nil);
     }
@@ -257,8 +275,7 @@ mod tests {
     #[test]
     fn set_global_readable_inside_script() {
         let vm = vm_all();
-        vm.set_global("base".to_string(), LocalValue::Integer(10))
-            .unwrap();
+        vm.set_global("base".to_string(), LocalValue::Integer(10)).unwrap();
         assert_eq!(
             vm.run("return base * 3".to_string()).unwrap(),
             LocalValue::Integer(30)
@@ -269,11 +286,10 @@ mod tests {
     fn script_global_readable_via_get_global() {
         let vm = vm_all();
         vm.run("count = 5".to_string()).unwrap();
-        assert_eq!(
-            vm.get_global("count".to_string()).unwrap(),
-            LocalValue::Integer(5)
-        );
+        assert_eq!(vm.get_global("count".to_string()).unwrap(), LocalValue::Integer(5));
     }
+
+    // -- version() --
 
     #[test]
     fn version_is_lua54() {
@@ -291,28 +307,7 @@ mod tests {
         }
     }
 
-    #[test]
-    fn run_with_sets_global_directly() {
-        let vm = vm_all();
-        vm.run_with(|lua| lua.globals().set("injected", 99_i64))
-            .unwrap();
-        assert_eq!(
-            vm.get_global("injected".to_string()).unwrap(),
-            LocalValue::Integer(99)
-        );
-    }
-
-    #[test]
-    fn run_with_reads_global_written_by_script() {
-        let vm = vm_all();
-        vm.run("value = 123".to_string()).unwrap();
-        vm.run_with(|lua| {
-            let n: i64 = lua.globals().get("value")?;
-            assert_eq!(n, 123);
-            Ok(())
-        })
-        .unwrap();
-    }
+    // -- error handling --
 
     #[test]
     fn syntax_error_returns_lua_error_syntax() {
@@ -347,36 +342,6 @@ mod tests {
         assert_eq!(
             vm(LuaStdLib::None).run("return 6 * 7".to_string()).unwrap(),
             LocalValue::Integer(42)
-        );
-    }
-
-    #[test]
-    fn sandbox_blocks_native_module_require() {
-        let v = Vm::create(
-            LunaConfig { sandbox: true },
-            LuaOption {
-                stdlib: LuaStdLib::All,
-                version: LuaVersion::Lua54,
-            },
-        )
-        .unwrap();
-        let err = v.run(r#"require("fs")"#.to_string()).unwrap_err();
-        assert!(matches!(err, LuaError::Runtime { .. }), "got: {err:?}");
-    }
-
-    #[test]
-    fn sandbox_lua_stdlib_still_works() {
-        let v = Vm::create(
-            LunaConfig { sandbox: true },
-            LuaOption {
-                stdlib: LuaStdLib::All,
-                version: LuaVersion::Lua54,
-            },
-        )
-        .unwrap();
-        assert_eq!(
-            v.run("return tostring(42)".to_string()).unwrap(),
-            LocalValue::LuaString("42".to_string()),
         );
     }
 

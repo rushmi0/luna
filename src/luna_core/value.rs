@@ -33,28 +33,45 @@ mod tests {
 
     #[test]
     fn nil() {
-        assert!(matches!(LocalValue::from(mlua::Value::Nil), LocalValue::Nil));
+        assert!(matches!(
+            LocalValue::from(mlua::Value::Nil),
+            LocalValue::Nil
+        ));
     }
 
     #[test]
     fn boolean_true_and_false() {
-        assert!(matches!(LocalValue::from(mlua::Value::Boolean(true)), LocalValue::Boolean(true)));
-        assert!(matches!(LocalValue::from(mlua::Value::Boolean(false)), LocalValue::Boolean(false)));
+        assert!(matches!(
+            LocalValue::from(mlua::Value::Boolean(true)),
+            LocalValue::Boolean(true)
+        ));
+        assert!(matches!(
+            LocalValue::from(mlua::Value::Boolean(false)),
+            LocalValue::Boolean(false)
+        ));
     }
 
     #[test]
     fn integer() {
-        assert!(matches!(LocalValue::from(mlua::Value::Integer(42)), LocalValue::Integer(42)));
+        assert!(matches!(
+            LocalValue::from(mlua::Value::Integer(42)),
+            LocalValue::Integer(42)
+        ));
     }
 
     #[test]
     fn negative_integer() {
-        assert!(matches!(LocalValue::from(mlua::Value::Integer(-7)), LocalValue::Integer(-7)));
+        assert!(matches!(
+            LocalValue::from(mlua::Value::Integer(-7)),
+            LocalValue::Integer(-7)
+        ));
     }
 
     #[test]
     fn number() {
-        let LocalValue::Number(n) = LocalValue::from(mlua::Value::Number(3.14)) else { panic!() };
+        let LocalValue::Number(n) = LocalValue::from(mlua::Value::Number(3.14)) else {
+            panic!()
+        };
         assert!((n - 3.14).abs() < f64::EPSILON);
     }
 
@@ -72,6 +89,9 @@ mod tests {
     fn table_maps_to_nil() {
         let lua = lua();
         let t = lua.create_table().unwrap();
-        assert!(matches!(LocalValue::from(mlua::Value::Table(t)), LocalValue::Nil));
+        assert!(matches!(
+            LocalValue::from(mlua::Value::Table(t)),
+            LocalValue::Nil
+        ));
     }
 }

@@ -53,30 +53,38 @@ fn expected_version_str(v: LuaVersion) -> Option<&'static str> {
         LuaVersion::Lua53 => Some("Lua 5.3"),
         LuaVersion::Lua54 => Some("Lua 5.4"),
         LuaVersion::Lua55 => Some("Lua 5.5"),
-        LuaVersion::Luau  => Some("Luau"),
+        LuaVersion::Luau => Some("Luau"),
         LuaVersion::LuaJit => None,
     }
 }
 
 fn build_lua(option: &LuaOption) -> Result<Lua, LuaError> {
-    let expected = expected_version_str(option.version).ok_or_else(|| LuaError::UnsupportedVersion {
-        msg: "LuaJIT is not supported by this build".to_string(),
-    })?;
+    let expected =
+        expected_version_str(option.version).ok_or_else(|| LuaError::UnsupportedVersion {
+            msg: "LuaJIT is not supported by this build".to_string(),
+        })?;
 
-    let flags = match option.stdlib {
-        LuaStdLib::All => MluaStdLib::ALL_SAFE,
-        LuaStdLib::Safe => {
-            MluaStdLib::TABLE | MluaStdLib::STRING | MluaStdLib::MATH | MluaStdLib::COROUTINE
+    // ALL_SAFE | DEBUG: mlua gates DEBUG behind `unsafe_new_with` because it
+    // can break sandboxing, but it is memory-safe. We bypass that check here
+    // intentionally since LuaStdLib::All opts into the full standard library.
+    let lua = match option.stdlib {
+        LuaStdLib::All => unsafe {
+            Lua::unsafe_new_with(
+                MluaStdLib::ALL_SAFE | MluaStdLib::DEBUG,
+                LuaOptions::default(),
+            )
+        },
+        LuaStdLib::Safe => Lua::new_with(
+            MluaStdLib::TABLE | MluaStdLib::STRING | MluaStdLib::MATH | MluaStdLib::COROUTINE,
+            LuaOptions::default(),
+        )
+        .map_err(LuaError::from)?,
+        LuaStdLib::None => {
+            Lua::new_with(MluaStdLib::NONE, LuaOptions::default()).map_err(LuaError::from)?
         }
-        LuaStdLib::None => MluaStdLib::NONE,
     };
 
-    let lua = Lua::new_with(flags, LuaOptions::default()).map_err(LuaError::from)?;
-
-    let actual: String = lua
-        .globals()
-        .get("_VERSION")
-        .map_err(LuaError::from)?;
+    let actual: String = lua.globals().get("_VERSION").map_err(LuaError::from)?;
 
     if actual != expected {
         return Err(LuaError::UnsupportedVersion {
@@ -92,7 +100,10 @@ mod tests {
     use super::*;
 
     fn opt(stdlib: LuaStdLib) -> LuaOption {
-        LuaOption { stdlib, version: LuaVersion::Lua54 }
+        LuaOption {
+            stdlib,
+            version: LuaVersion::Lua54,
+        }
     }
 
     #[test]
@@ -112,13 +123,19 @@ mod tests {
 
     #[test]
     fn wrong_version_returns_unsupported_error() {
-        let result = build_lua(&LuaOption { stdlib: LuaStdLib::All, version: LuaVersion::Lua51 });
+        let result = build_lua(&LuaOption {
+            stdlib: LuaStdLib::All,
+            version: LuaVersion::Lua51,
+        });
         assert!(matches!(result, Err(LuaError::UnsupportedVersion { .. })));
     }
 
     #[test]
     fn luajit_returns_unsupported_error() {
-        let result = build_lua(&LuaOption { stdlib: LuaStdLib::All, version: LuaVersion::LuaJit });
+        let result = build_lua(&LuaOption {
+            stdlib: LuaStdLib::All,
+            version: LuaVersion::LuaJit,
+        });
         assert!(matches!(result, Err(LuaError::UnsupportedVersion { .. })));
     }
 

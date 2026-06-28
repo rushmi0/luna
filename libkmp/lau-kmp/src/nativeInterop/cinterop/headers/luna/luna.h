@@ -153,11 +153,19 @@ typedef struct UniffiForeignFutureStructVoid {
 typedef void (*UniffiForeignFutureCompleteVoid)(int64_t, UniffiForeignFutureStructVoid
     );
 
+void * uniffi_luna_fn_clone_lunavm(void * ptr, UniffiRustCallStatus *_Nonnull out_status
+);
+void uniffi_luna_fn_free_lunavm(void * ptr, UniffiRustCallStatus *_Nonnull out_status
+);
+void * uniffi_luna_fn_constructor_lunavm_new(RustBuffer config, UniffiRustCallStatus *_Nonnull out_status
+);
+void * uniffi_luna_fn_method_lunavm_start(void * ptr, UniffiRustCallStatus *_Nonnull out_status
+);
 void * uniffi_luna_fn_clone_vm(void * ptr, UniffiRustCallStatus *_Nonnull out_status
 );
 void uniffi_luna_fn_free_vm(void * ptr, UniffiRustCallStatus *_Nonnull out_status
 );
-void * uniffi_luna_fn_constructor_vm_create(RustBuffer config, RustBuffer option, UniffiRustCallStatus *_Nonnull out_status
+int8_t uniffi_luna_fn_method_vm_exec(void * ptr, RustBuffer source, UniffiRustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_luna_fn_method_vm_get_global(void * ptr, RustBuffer name, UniffiRustCallStatus *_Nonnull out_status
 );
@@ -286,6 +294,12 @@ void ffi_luna_rust_future_complete_void(int64_t handle, UniffiRustCallStatus *_N
 int16_t uniffi_luna_checksum_func_init_logger(void
     
 );
+int16_t uniffi_luna_checksum_method_lunavm_start(void
+    
+);
+int16_t uniffi_luna_checksum_method_vm_exec(void
+    
+);
 int16_t uniffi_luna_checksum_method_vm_get_global(void
     
 );
@@ -301,7 +315,7 @@ int16_t uniffi_luna_checksum_method_vm_set_global(void
 int16_t uniffi_luna_checksum_method_vm_version(void
     
 );
-int16_t uniffi_luna_checksum_constructor_vm_create(void
+int16_t uniffi_luna_checksum_constructor_lunavm_new(void
     
 );
 int32_t ffi_luna_uniffi_contract_version(void

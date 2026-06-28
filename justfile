@@ -39,15 +39,19 @@ build-host: setup
 build-android: setup
     cargo ndk -t arm64-v8a -t armeabi-v7a -t x86 -t x86_64 -P 24 build --lib --release
 
-# macOS only
+# apple platform only
 build-ios: setup
     #!/usr/bin/env bash
     set -euxo pipefail
+    if [[ "$(uname)" != "Darwin" ]]; then
+        echo "build-ios requires macOS with Xcode installed" >&2
+        exit 1
+    fi
     for TARGET in \
         aarch64-apple-ios     \
         aarch64-apple-ios-sim \
         x86_64-apple-ios; do
-        cargo zigbuild --lib --release --target "$TARGET"
+        cargo build --lib --release --target "$TARGET"
     done
 
 build-linux: setup

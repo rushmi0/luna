@@ -103,7 +103,45 @@ public object NoPointer
 
 
 
+public interface LunaVmInterface {
+    
+    @Throws(LuaException::class)
+    public fun `start`(): Vm
+    
+    public companion object
+}
+
+
+public expect open class LunaVm: Disposable, LunaVmInterface {
+    /**
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    public constructor(noPointer: NoPointer)
+
+    
+    public constructor(`config`: LuaOption)
+
+    override fun destroy()
+    override fun close()
+
+    
+    @Throws(LuaException::class)
+    public override fun `start`(): Vm
+    
+
+    
+    public companion object
+}
+
+
+
+
 public interface VmInterface {
+    
+    @Throws(LuaException::class)
+    public fun `exec`(`source`: kotlin.String): kotlin.Boolean
     
     @Throws(LuaException::class)
     public fun `getGlobal`(`name`: kotlin.String): LocalValue
@@ -139,6 +177,9 @@ public expect open class Vm: Disposable, VmInterface {
 
     
     @Throws(LuaException::class)
+    public override fun `exec`(`source`: kotlin.String): kotlin.Boolean
+    
+    @Throws(LuaException::class)
     public override fun `getGlobal`(`name`: kotlin.String): LocalValue
     
     @Throws(LuaException::class)
@@ -153,13 +194,8 @@ public expect open class Vm: Disposable, VmInterface {
     public override fun `version`(): kotlin.String
     
 
-    public companion object {
-        
-        @Throws(LuaException::class)
-        public fun `create`(`config`: LunaConfig, `option`: LuaOption): Vm
-        
-    }
     
+    public companion object
 }
 
 

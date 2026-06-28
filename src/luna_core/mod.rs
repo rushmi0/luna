@@ -7,7 +7,7 @@ pub mod logger;
 pub mod value;
 pub mod vm;
 
-pub use config::{LuaOption, LuaStdLib, LuaVersion, LunaConfig};
+pub use config::{LuaOption, LuaStdLib, LuaVersion};
 pub(crate) use context::LuaContext;
 pub use error::LuaError;
 pub use logger::{LogLevel, init_logger};
