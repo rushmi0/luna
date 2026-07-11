@@ -36,6 +36,17 @@ setup:
 build-host: setup
     cargo build --lib --release
 
+build-cli: setup
+    cargo build --bin luna --release
+
+# Run the luna CLI, e.g. `just run-cli script.lua` or `just run-cli -- --help`
+run-cli *args:
+    cargo run --bin luna --release -- {{args}}
+
+# Start the luna REPL
+repl:
+    cargo run --bin luna --release -- --repl
+
 build-android: setup
     cargo ndk -t arm64-v8a -t armeabi-v7a -t x86 -t x86_64 -P 24 build --lib --release
 

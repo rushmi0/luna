@@ -1244,6 +1244,12 @@ internal typealias UniffiForeignFutureCompleteVoid = luna.cinterop.UniffiForeign
 
 
 
+
+
+
+
+
+
 internal interface UniffiLib {
     companion object {
         internal val INSTANCE: UniffiLib by lazy {
@@ -1285,6 +1291,10 @@ internal interface UniffiLib {
         `source`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
     ): Byte
+    fun uniffi_luna_fn_method_vm_gc_collect(
+        `ptr`: Pointer?,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Unit
     fun uniffi_luna_fn_method_vm_get_global(
         `ptr`: Pointer?,
         `name`: RustBufferByValue,
@@ -1306,6 +1316,15 @@ internal interface UniffiLib {
         `value`: RustBufferByValue,
         uniffiCallStatus: UniffiRustCallStatus,
     ): Unit
+    fun uniffi_luna_fn_method_vm_set_memory_limit(
+        `ptr`: Pointer?,
+        `limit`: Long,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Long
+    fun uniffi_luna_fn_method_vm_used_memory(
+        `ptr`: Pointer?,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Long
     fun uniffi_luna_fn_method_vm_version(
         `ptr`: Pointer?,
         uniffiCallStatus: UniffiRustCallStatus,
@@ -1532,6 +1551,8 @@ internal interface UniffiLib {
     ): Short
     fun uniffi_luna_checksum_method_vm_exec(
     ): Short
+    fun uniffi_luna_checksum_method_vm_gc_collect(
+    ): Short
     fun uniffi_luna_checksum_method_vm_get_global(
     ): Short
     fun uniffi_luna_checksum_method_vm_run(
@@ -1539,6 +1560,10 @@ internal interface UniffiLib {
     fun uniffi_luna_checksum_method_vm_run_file(
     ): Short
     fun uniffi_luna_checksum_method_vm_set_global(
+    ): Short
+    fun uniffi_luna_checksum_method_vm_set_memory_limit(
+    ): Short
+    fun uniffi_luna_checksum_method_vm_used_memory(
     ): Short
     fun uniffi_luna_checksum_method_vm_version(
     ): Short
@@ -1601,6 +1626,13 @@ internal class UniffiLibInstance: UniffiLib {
         `source`,
         uniffiCallStatus,
     )
+    override fun uniffi_luna_fn_method_vm_gc_collect(
+        `ptr`: Pointer?,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Unit = luna.cinterop.uniffi_luna_fn_method_vm_gc_collect(
+        `ptr`,
+        uniffiCallStatus,
+    )
     override fun uniffi_luna_fn_method_vm_get_global(
         `ptr`: Pointer?,
         `name`: RustBufferByValue,
@@ -1637,6 +1669,22 @@ internal class UniffiLibInstance: UniffiLib {
         `ptr`,
         `name`,
         `value`,
+        uniffiCallStatus,
+    )
+    override fun uniffi_luna_fn_method_vm_set_memory_limit(
+        `ptr`: Pointer?,
+        `limit`: Long,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Long = luna.cinterop.uniffi_luna_fn_method_vm_set_memory_limit(
+        `ptr`,
+        `limit`,
+        uniffiCallStatus,
+    )
+    override fun uniffi_luna_fn_method_vm_used_memory(
+        `ptr`: Pointer?,
+        uniffiCallStatus: UniffiRustCallStatus,
+    ): Long = luna.cinterop.uniffi_luna_fn_method_vm_used_memory(
+        `ptr`,
         uniffiCallStatus,
     )
     override fun uniffi_luna_fn_method_vm_version(
@@ -2030,6 +2078,9 @@ internal class UniffiLibInstance: UniffiLib {
     override fun uniffi_luna_checksum_method_vm_exec(
     ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_exec(
     )
+    override fun uniffi_luna_checksum_method_vm_gc_collect(
+    ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_gc_collect(
+    )
     override fun uniffi_luna_checksum_method_vm_get_global(
     ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_get_global(
     )
@@ -2041,6 +2092,12 @@ internal class UniffiLibInstance: UniffiLib {
     )
     override fun uniffi_luna_checksum_method_vm_set_global(
     ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_set_global(
+    )
+    override fun uniffi_luna_checksum_method_vm_set_memory_limit(
+    ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_set_memory_limit(
+    )
+    override fun uniffi_luna_checksum_method_vm_used_memory(
+    ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_used_memory(
     )
     override fun uniffi_luna_checksum_method_vm_version(
     ): Short = luna.cinterop.uniffi_luna_checksum_method_vm_version(
@@ -2110,6 +2167,27 @@ private class UniffiNativeCleanable(val disposable: Disposable) : UniffiCleaner.
 
 private fun UniffiCleaner.Companion.create(): UniffiCleaner =
     NativeCleaner()
+
+
+public object FfiConverterULong: FfiConverter<ULong, Long> {
+    override fun lift(value: Long): ULong {
+        return value.toULong()
+    }
+
+    override fun read(buf: ByteBuffer): ULong {
+        return lift(buf.getLong())
+    }
+
+    override fun lower(value: ULong): Long {
+        return value.toLong()
+    }
+
+    override fun allocationSize(value: ULong): ULong = 8UL
+
+    override fun write(value: ULong, buf: ByteBuffer) {
+        buf.putLong(value.toLong())
+    }
+}
 
 
 public object FfiConverterLong: FfiConverter<Long, Long> {
@@ -2478,6 +2556,22 @@ public actual open class Vm: Disposable, VmInterface {
         })
     }
 
+    /**
+     * Runs a full GC cycle now instead of waiting for the incremental
+     * collector to get there on its own.
+     */
+    @Throws(LuaException::class)
+    public actual override fun `gcCollect`() {
+        callWithPointer {
+            uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_gc_collect(
+                    it,
+                    uniffiRustCallStatus,
+                )
+            }
+        }
+    }
+
     @Throws(LuaException::class)
     public actual override fun `getGlobal`(`name`: kotlin.String): LocalValue {
         return FfiConverterTypeLocalValue.lift(callWithPointer {
@@ -2529,6 +2623,39 @@ public actual open class Vm: Disposable, VmInterface {
                 )
             }
         }
+    }
+
+    /**
+     * Caps the Lua heap; further allocations past `limit` fail with a Lua
+     * memory error instead of growing unbounded. Pass `0` to clear the cap.
+     * Returns the previous limit. Useful when running untrusted scripts on
+     * memory-constrained (mobile) hosts.
+     */
+    @Throws(LuaException::class)
+    public actual override fun `setMemoryLimit`(`limit`: kotlin.ULong): kotlin.ULong {
+        return FfiConverterULong.lift(callWithPointer {
+            uniffiRustCallWithError(LuaExceptionErrorHandler) { uniffiRustCallStatus ->
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_set_memory_limit(
+                    it,
+                    FfiConverterULong.lower(`limit`),
+                    uniffiRustCallStatus,
+                )
+            }
+        })
+    }
+
+    /**
+     * Bytes currently held by the Lua heap (`Lua::used_memory`).
+     */
+    public actual override fun `usedMemory`(): kotlin.ULong {
+        return FfiConverterULong.lift(callWithPointer {
+            uniffiRustCall { uniffiRustCallStatus ->
+                UniffiLib.INSTANCE.uniffi_luna_fn_method_vm_used_memory(
+                    it,
+                    uniffiRustCallStatus,
+                )
+            }
+        })
     }
 
     public actual override fun `version`(): kotlin.String {
@@ -2597,25 +2724,6 @@ public object FfiConverterTypeLuaOption: FfiConverterRustBuffer<LuaOption> {
     override fun write(value: LuaOption, buf: ByteBuffer) {
         FfiConverterTypeLuaStdLib.write(value.`stdlib`, buf)
         FfiConverterTypeLuaVersion.write(value.`version`, buf)
-    }
-}
-
-
-
-
-public object FfiConverterTypeLunaConfig: FfiConverterRustBuffer<LunaConfig> {
-    override fun read(buf: ByteBuffer): LunaConfig {
-        return LunaConfig(
-            FfiConverterBoolean.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: LunaConfig): ULong = (
-            FfiConverterBoolean.allocationSize(value.`sandbox`)
-    )
-
-    override fun write(value: LunaConfig, buf: ByteBuffer) {
-        FfiConverterBoolean.write(value.`sandbox`, buf)
     }
 }
 

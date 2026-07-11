@@ -5,8 +5,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create the VM with a struct literal, then call .start().
     let vm = LunaVM {
         config: LuaOption {
-            stdlib: LuaStdLib::All,
             version: LuaVersion::Lua54,
+            stdlib: LuaStdLib::All,
+            memory_limit: None,
+            instruction_limit: None,
+            timeout: None,
         },
     }
     .start()?;

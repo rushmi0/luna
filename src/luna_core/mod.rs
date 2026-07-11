@@ -3,6 +3,7 @@ mod runtime;
 pub mod config;
 pub mod context;
 pub mod error;
+pub(crate) mod guard;
 pub mod logger;
 pub mod value;
 pub mod vm;

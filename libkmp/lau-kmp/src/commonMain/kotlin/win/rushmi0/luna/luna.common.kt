@@ -103,6 +103,8 @@ public object NoPointer
 
 
 
+
+
 public interface LunaVmInterface {
     
     @Throws(LuaException::class)
@@ -143,6 +145,13 @@ public interface VmInterface {
     @Throws(LuaException::class)
     public fun `exec`(`source`: kotlin.String): kotlin.Boolean
     
+    /**
+     * Runs a full GC cycle now instead of waiting for the incremental
+     * collector to get there on its own.
+     */
+    @Throws(LuaException::class)
+    public fun `gcCollect`()
+    
     @Throws(LuaException::class)
     public fun `getGlobal`(`name`: kotlin.String): LocalValue
     
@@ -154,6 +163,20 @@ public interface VmInterface {
     
     @Throws(LuaException::class)
     public fun `setGlobal`(`name`: kotlin.String, `value`: LocalValue)
+    
+    /**
+     * Caps the Lua heap; further allocations past `limit` fail with a Lua
+     * memory error instead of growing unbounded. Pass `0` to clear the cap.
+     * Returns the previous limit. Useful when running untrusted scripts on
+     * memory-constrained (mobile) hosts.
+     */
+    @Throws(LuaException::class)
+    public fun `setMemoryLimit`(`limit`: kotlin.ULong): kotlin.ULong
+    
+    /**
+     * Bytes currently held by the Lua heap (`Lua::used_memory`).
+     */
+    public fun `usedMemory`(): kotlin.ULong
     
     public fun `version`(): kotlin.String
     
@@ -179,6 +202,13 @@ public expect open class Vm: Disposable, VmInterface {
     @Throws(LuaException::class)
     public override fun `exec`(`source`: kotlin.String): kotlin.Boolean
     
+    /**
+     * Runs a full GC cycle now instead of waiting for the incremental
+     * collector to get there on its own.
+     */
+    @Throws(LuaException::class)
+    public override fun `gcCollect`()
+    
     @Throws(LuaException::class)
     public override fun `getGlobal`(`name`: kotlin.String): LocalValue
     
@@ -190,6 +220,20 @@ public expect open class Vm: Disposable, VmInterface {
     
     @Throws(LuaException::class)
     public override fun `setGlobal`(`name`: kotlin.String, `value`: LocalValue)
+    
+    /**
+     * Caps the Lua heap; further allocations past `limit` fail with a Lua
+     * memory error instead of growing unbounded. Pass `0` to clear the cap.
+     * Returns the previous limit. Useful when running untrusted scripts on
+     * memory-constrained (mobile) hosts.
+     */
+    @Throws(LuaException::class)
+    public override fun `setMemoryLimit`(`limit`: kotlin.ULong): kotlin.ULong
+    
+    /**
+     * Bytes currently held by the Lua heap (`Lua::used_memory`).
+     */
+    public override fun `usedMemory`(): kotlin.ULong
     
     public override fun `version`(): kotlin.String
     
@@ -205,15 +249,6 @@ public expect open class Vm: Disposable, VmInterface {
 public data class LuaOption (
     var `stdlib`: LuaStdLib, 
     var `version`: LuaVersion
-) {
-    public companion object
-}
-
-
-
-
-public data class LunaConfig (
-    var `sandbox`: kotlin.Boolean
 ) {
     public companion object
 }

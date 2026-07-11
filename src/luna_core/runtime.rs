@@ -7,41 +7,42 @@ use crate::luna_modules::ModuleBuilder;
 use super::config::{LuaOption, LuaStdLib, LuaVersion};
 use super::context::LuaContext;
 use super::error::LuaError;
+use super::guard;
 
-struct EngineShared {
+pub(crate) struct Runtime {
+    rt: Arc<tokio::runtime::Runtime>,
     option: LuaOption,
     modules: ModuleBuilder,
 }
 
-pub(crate) struct Runtime {
-    rt: Arc<tokio::runtime::Runtime>,
-    shared: Arc<EngineShared>,
-}
-
 impl Runtime {
-    pub(crate) fn new(option: LuaOption, sandbox: bool) -> Result<Self, LuaError> {
-        let modules = if sandbox {
-            ModuleBuilder::new()
-        } else {
-            ModuleBuilder::default()
-        };
-        let rt = tokio::runtime::Builder::new_multi_thread()
+    pub(crate) fn new(option: LuaOption) -> Result<Self, LuaError> {
+        let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .map_err(|e| LuaError::Other { msg: e.to_string() })?;
-        let shared = Arc::new(EngineShared { option, modules });
         Ok(Self {
             rt: Arc::new(rt),
-            shared,
+            option,
+            modules: ModuleBuilder::default(),
         })
     }
 
     pub(crate) fn create_context(&self) -> Result<LuaContext, LuaError> {
-        let lua = build_lua(&self.shared.option)?;
-        self.shared.modules.apply(&lua).map_err(LuaError::from)?;
+        let lua = build_lua(&self.option)?;
+        self.modules.apply(&lua).map_err(LuaError::from)?;
+
+        if let Some(limit) = self.option.memory_limit {
+            lua.set_memory_limit(limit as usize)
+                .map_err(LuaError::from)?;
+        }
+        let guard = guard::install(&lua, self.option.instruction_limit, self.option.timeout)
+            .map_err(LuaError::from)?;
+
         Ok(LuaContext {
             lua,
             rt: Arc::clone(&self.rt),
+            guard,
         })
     }
 }
@@ -64,9 +65,6 @@ fn build_lua(option: &LuaOption) -> Result<Lua, LuaError> {
             msg: "LuaJIT is not supported by this build".to_string(),
         })?;
 
-    // ALL_SAFE | DEBUG: mlua gates DEBUG behind `unsafe_new_with` because it
-    // can break sandboxing, but it is memory-safe. We bypass that check here
-    // intentionally since LuaStdLib::All opts into the full standard library.
     let lua = match option.stdlib {
         LuaStdLib::All => unsafe {
             Lua::unsafe_new_with(
@@ -101,8 +99,11 @@ mod tests {
 
     fn opt(stdlib: LuaStdLib) -> LuaOption {
         LuaOption {
-            stdlib,
             version: LuaVersion::Lua54,
+            stdlib,
+            memory_limit: None,
+            instruction_limit: None,
+            timeout: None,
         }
     }
 
@@ -124,8 +125,11 @@ mod tests {
     #[test]
     fn wrong_version_returns_unsupported_error() {
         let result = build_lua(&LuaOption {
-            stdlib: LuaStdLib::All,
             version: LuaVersion::Lua51,
+            stdlib: LuaStdLib::All,
+            memory_limit: None,
+            instruction_limit: None,
+            timeout: None,
         });
         assert!(matches!(result, Err(LuaError::UnsupportedVersion { .. })));
     }
@@ -133,8 +137,11 @@ mod tests {
     #[test]
     fn luajit_returns_unsupported_error() {
         let result = build_lua(&LuaOption {
-            stdlib: LuaStdLib::All,
             version: LuaVersion::LuaJit,
+            stdlib: LuaStdLib::All,
+            memory_limit: None,
+            instruction_limit: None,
+            timeout: None,
         });
         assert!(matches!(result, Err(LuaError::UnsupportedVersion { .. })));
     }

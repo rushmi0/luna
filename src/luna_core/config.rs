@@ -1,8 +1,3 @@
-#[derive(Debug, Clone, uniffi::Record)]
-pub struct LunaConfig {
-    pub sandbox: bool,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
 pub enum LuaStdLib {
     All,
@@ -23,6 +18,9 @@ pub enum LuaVersion {
 
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct LuaOption {
-    pub stdlib: LuaStdLib,
     pub version: LuaVersion,
+    pub stdlib: LuaStdLib,
+    pub memory_limit: Option<u64>,
+    pub instruction_limit: Option<u64>,
+    pub timeout: Option<std::time::Duration>,
 }
