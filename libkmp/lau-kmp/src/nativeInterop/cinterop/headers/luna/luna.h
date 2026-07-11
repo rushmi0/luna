@@ -167,6 +167,8 @@ void uniffi_luna_fn_free_vm(void * ptr, UniffiRustCallStatus *_Nonnull out_statu
 );
 int8_t uniffi_luna_fn_method_vm_exec(void * ptr, RustBuffer source, UniffiRustCallStatus *_Nonnull out_status
 );
+int8_t uniffi_luna_fn_method_vm_exec_named(void * ptr, RustBuffer source, RustBuffer name, UniffiRustCallStatus *_Nonnull out_status
+);
 void uniffi_luna_fn_method_vm_gc_collect(void * ptr, UniffiRustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_luna_fn_method_vm_get_global(void * ptr, RustBuffer name, UniffiRustCallStatus *_Nonnull out_status
@@ -175,9 +177,9 @@ RustBuffer uniffi_luna_fn_method_vm_run(void * ptr, RustBuffer source, UniffiRus
 );
 void uniffi_luna_fn_method_vm_run_file(void * ptr, RustBuffer path, UniffiRustCallStatus *_Nonnull out_status
 );
-void uniffi_luna_fn_method_vm_set_global(void * ptr, RustBuffer name, RustBuffer value, UniffiRustCallStatus *_Nonnull out_status
+RustBuffer uniffi_luna_fn_method_vm_run_named(void * ptr, RustBuffer source, RustBuffer name, UniffiRustCallStatus *_Nonnull out_status
 );
-int64_t uniffi_luna_fn_method_vm_set_memory_limit(void * ptr, int64_t limit, UniffiRustCallStatus *_Nonnull out_status
+void uniffi_luna_fn_method_vm_set_global(void * ptr, RustBuffer name, RustBuffer value, UniffiRustCallStatus *_Nonnull out_status
 );
 int64_t uniffi_luna_fn_method_vm_used_memory(void * ptr, UniffiRustCallStatus *_Nonnull out_status
 );
@@ -306,6 +308,9 @@ int16_t uniffi_luna_checksum_method_lunavm_start(void
 int16_t uniffi_luna_checksum_method_vm_exec(void
     
 );
+int16_t uniffi_luna_checksum_method_vm_exec_named(void
+    
+);
 int16_t uniffi_luna_checksum_method_vm_gc_collect(void
     
 );
@@ -318,10 +323,10 @@ int16_t uniffi_luna_checksum_method_vm_run(void
 int16_t uniffi_luna_checksum_method_vm_run_file(void
     
 );
-int16_t uniffi_luna_checksum_method_vm_set_global(void
+int16_t uniffi_luna_checksum_method_vm_run_named(void
     
 );
-int16_t uniffi_luna_checksum_method_vm_set_memory_limit(void
+int16_t uniffi_luna_checksum_method_vm_set_global(void
     
 );
 int16_t uniffi_luna_checksum_method_vm_used_memory(void

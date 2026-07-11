@@ -8,12 +8,16 @@ import kotlin.test.assertTrue
 
 class FfiTest {
 
-    private fun makeVm(): Vm = LunaVm(
-        config = LuaOption(
-            stdlib = LuaStdLib.ALL,
-            version = LuaVersion.LUA54
+    private fun option(stdlib: LuaStdLib, version: LuaVersion = LuaVersion.LUA54): LuaOption =
+        LuaOption(
+            version = version,
+            stdlib = stdlib,
+            memoryLimit = null,
+            instructionLimit = null,
+            timeout = null,
         )
-    ).start()
+
+    private fun makeVm(): Vm = LunaVm(config = option(LuaStdLib.ALL)).start()
 
     // -- Basic run / exec flow --
 
@@ -186,7 +190,7 @@ class FfiTest {
     @Test
     fun safe_stdlib_hides_io() {
         LunaVm(
-            config = LuaOption(stdlib = LuaStdLib.SAFE, version = LuaVersion.LUA54)
+            config = option(LuaStdLib.SAFE)
         ).start().use { vm ->
             assertIs<LocalValue.Nil>(vm.run("return io"))
         }
@@ -195,7 +199,7 @@ class FfiTest {
     @Test
     fun no_stdlib_arithmetic_works() {
         LunaVm(
-            config = LuaOption(stdlib = LuaStdLib.NONE, version = LuaVersion.LUA54)
+            config = option(LuaStdLib.NONE)
         ).start().use { vm ->
             val v = vm.run("return 6 * 7")
             assertIs<LocalValue.Integer>(v)
@@ -267,7 +271,7 @@ class FfiTest {
     fun unsupported_version_throws_UnsupportedVersion() {
         assertFailsWith<LuaException.UnsupportedVersion> {
             LunaVm(
-                config = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA_JIT)
+                config = option(LuaStdLib.ALL, version = LuaVersion.LUA_JIT)
             ).start()
         }
     }
@@ -276,7 +280,7 @@ class FfiTest {
 
     @Test
     fun two_vms_do_not_share_globals() {
-        val opt = LuaOption(stdlib = LuaStdLib.ALL, version = LuaVersion.LUA54)
+        val opt = option(LuaStdLib.ALL)
 
         LunaVm(config = opt).start().use { v1 ->
             LunaVm(config = opt).start().use { v2 ->
