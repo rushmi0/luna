@@ -14,4 +14,9 @@ xcuserdata
 
 # Generated native libraries
 lau-kmp/src/androidMain/jniLibs/
+lau-kmp/src/lib/
 lau-kmp/src/jvmMain/resources/
+lau-kmp/src/commonMain/
+lau-kmp/src/jvmMain/
+lau-kmp/src/androidMain/
+lau-kmp/src/nativeMain/
